@@ -28,12 +28,19 @@ If podman-ollama is passed text it is a non-interactive tool:
 
 ```bash
 $ podman-ollama "Write a git commit message for this diff: $(git diff)"
+`Fixed formatting in README.md`
+
+This commit message provides a brief description of the changes made in
+the file, and is written in a format that is easy to understand and use.
 ```
 
 If podman-ollama is run without any arguments it is an interactive tool:
 
 ``` bash
 $ podman-ollama
->>> Send a message (/? for help)
+>>> """Hello,
+... world!
+... """
+I'm a basic program that prints the famous "Hello, world!" message to the console.
 ```
 
