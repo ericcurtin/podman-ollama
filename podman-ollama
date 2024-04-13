@@ -17,8 +17,10 @@ server_init() {
   fi
 
   VOL="ollama:/root/.ollama"
-  CON_URL="docker.io/ollama/ollama:$POST"
-  CON_PS=$($PRE $CON run --rm --privileged -d $ADD --gpus=all -v $VOL $CON_URL)
+  URL="docker.io/ollama/ollama:$POST"
+  PRIV="--privileged"
+  GPU="--gpus=all"
+  CON_PS=$($PRE $CON run --rm $PRIV -d $ADD $GPU -v"$HOME":"$HOME" -v$VOL $URL)
   RET="$?"
   if [ "$RET" -ne 0 ]; then
     echo "$CON_PS"
