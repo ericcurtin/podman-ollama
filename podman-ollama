@@ -4,6 +4,28 @@ cleanup() {
   $PRE $CON exec -it $CON_PS pkill ollama
 }
 
+server_init() {
+  if [ -e "/dev/dri" ]; then
+    ADD="--device /dev/dri"
+  fi
+
+  if [ -e "/dev/kfd" ]; then
+    ADD="$ADD --device /dev/kfd"
+    POST="rocm"
+  else
+    POST="latest"
+  fi
+
+  VOL="ollama:/root/.ollama"
+  CON_URL="docker.io/ollama/ollama:$POST"
+  CON_PS=$($PRE $CON run --rm --privileged -d $ADD --gpus=all -v $VOL $CON_URL)
+  RET="$?"
+  if [ "$RET" -ne 0 ]; then
+    echo "$CON_PS"
+    exit $RET
+  fi
+}
+
 set -e -o pipefail
 
 if command -v podman > /dev/null; then
@@ -14,22 +36,9 @@ else
   CON="podman"
 fi
 
-if [ -e "/dev/dri" ]; then
-  ADD="--device /dev/dri"
-fi
-
-if [ -e "/dev/kfd" ]; then
-  ADD="$ADD --device /dev/kfd"
-  POST="rocm"
-else
-  POST="latest"
-fi
-
-CON_URL="docker.io/ollama/ollama:$POST"
-
 trap cleanup EXIT
+server_init
 
-CON_PS=$($PRE $CON run --rm -d $ADD --gpus=all -v ollama:/root/.ollama $CON_URL)
 if [ -n "$1" ]; then
   $PRE $CON exec -it $CON_PS ollama run llama2 "$1"
 else
