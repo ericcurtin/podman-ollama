@@ -2,9 +2,9 @@
 
 The goal of podman-ollama is to make AI even more boring. It should set up a GPU if detected.
 
-podman pulls the runtime environment.
+[podman](https://github.com/containers/podman) pulls the runtime environment.
 
-ollama pulls the LLM.
+[ollama](https://github.com/ollama/ollama) pulls the model library.
 
 ## Install
 
