@@ -1,30 +1,38 @@
 #!/bin/bash
 
-set -e -o pipefail
-
-PRE=""
-
 cleanup() {
-  $PRE podman rm -f ollama
+  $PRE $CON exec -it $CON_PS pkill ollama
 }
 
-trap cleanup EXIT
+set -e -o pipefail
 
-ADD=
+if command -v podman > /dev/null; then
+  CON="podman"
+elif command -v docker > /dev/null; then
+  CON="docker"
+else
+  CON="podman"
+fi
+
 if [ -e "/dev/dri" ]; then
   ADD="--device /dev/dri"
 fi
 
-POST="latest"
 if [ -e "/dev/kfd" ]; then
   ADD="$ADD --device /dev/kfd"
   POST="rocm"
+else
+  POST="latest"
 fi
 
-$PRE podman run -d $ADD --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama docker.io/ollama/ollama:$POST
+CON_URL="docker.io/ollama/ollama:$POST"
+
+trap cleanup EXIT
+
+CON_PS=$($PRE $CON run --rm -d $ADD --gpus=all -v ollama:/root/.ollama $CON_URL)
 if [ -n "$1" ]; then
-  $PRE podman exec -it ollama ollama run llama2 "$1"
+  $PRE $CON exec -it $CON_PS ollama run llama2 "$1"
 else
-  $PRE podman exec -it ollama ollama run llama2
+  $PRE $CON exec -it $CON_PS ollama run llama2
 fi
 
