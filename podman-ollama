@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cleanup() {
-  $PRE $CON exec -it $CON_PS pkill ollama
+  $PRE $CON exec $CON_PS pkill ollama
 }
 
 server_init() {
@@ -42,7 +42,7 @@ trap cleanup EXIT
 server_init
 
 if [ -n "$1" ]; then
-  $PRE $CON exec -it $CON_PS ollama run llama2 "$1"
+  $PRE $CON exec $CON_PS ollama run llama2 "$1"
 else
   $PRE $CON exec -it $CON_PS ollama run llama2
 fi
