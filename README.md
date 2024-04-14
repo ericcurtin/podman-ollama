@@ -8,7 +8,7 @@ The goal of podman-ollama is to make AI even more boring. It should set up a GPU
 
 ## Install
 
-At present this is tested on Linux, but we are open to macOS, Windows and other one-liners compatible with other OSes.
+At present this is tested on Linux and Windows (WSL2), macOS support is planned.
 
 Install podman-ollama by running this one-liner:
 
