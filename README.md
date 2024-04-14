@@ -13,7 +13,7 @@ At present this is tested on Linux and Windows (WSL2), macOS support is planned.
 Install podman-ollama by running this one-liner:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ericcurtin/podman-ollama/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ericcurtin/podman-ollama/s/install.sh | sudo bash
 ```
 
 ## Usage
