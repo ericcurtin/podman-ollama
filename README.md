@@ -30,9 +30,9 @@ If podman-ollama is run without any arguments it is an interactive tool:
 
 ``` bash
 $ podman-ollama
->>> """Hello,
-... world!
-... """
-I'm a basic program that prints the famous "Hello, world!" message to the console.
+>>> Tell me about podman in less than ten words
+Podman: Containerized application management.
+
+>>> Send a message (/? for help)
 ```
 
