@@ -17,6 +17,10 @@ install_apt() {
   DEBIAN_FRONTEND=noninteractive apt-get -y install podman -q
 }
 
+cleanup() {
+  rm -rf "$TMP" &
+}
+
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
   exit 0
@@ -34,17 +38,13 @@ for BINDIR in /usr/local/bin /usr/bin /bin; do
 done
 
 FROM="podman-ollama"
-DELETE="false"
 if [ -z "$1" ]; then
-  DELETE="true"
-  TEMP="$(mktemp -d)"
-  FROM="$TEMP/podman-ollama"
-  curl -fsSL -o "$FROM" https://raw.githubusercontent.com/ericcurtin/podman-ollama/main/podman-ollama
+  TMP="$(mktemp -d)"
+  trap cleanup EXIT
+  FROM="$TMP/podman-ollama"
+  URL="raw.githubusercontent.com/ericcurtin/podman-ollama/s/podman-ollama"
+  curl -fsSL -o "$FROM" "https://$URL"
 fi
 
 install -m755 "$FROM" $BINDIR/podman-ollama
-
-if $DELETE; then
-  rm -rf "$TEMP"
-fi
 
