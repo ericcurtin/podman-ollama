@@ -3,8 +3,10 @@
 set -e -o pipefail
 
 install_dnf() {
-  if grep -q ostree= /proc/cmdline; then
-    rpm-ostree install podman
+  if sed "s/\s/\n/g" /proc/cmdline | grep -q -m1 "^ostree="; then
+    if rpm-ostree install podman 2>&1 | grep -v "already provided"; then
+      echo 'Reboot to complete podman driver install.'
+    fi
   elif command -v dnf > /dev/null; then
     dnf -y install podman
   elif command -v yum > /dev/null; then
@@ -25,6 +27,11 @@ if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
   exit 0
 fi
+
+# This is a downstream version of the ollama install script, until podman
+# related patches get reviewed
+URL="raw.githubusercontent.com/ericcurtin/podman-ollama/s/ollama-install.sh"
+curl -fsSL "https://$URL" | OLLAMA_CONTAINER_MANAGER="podman" sh
 
 . /etc/os-release
 
