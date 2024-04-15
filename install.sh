@@ -5,7 +5,7 @@ set -e -o pipefail
 install_dnf() {
   if sed "s/\s/\n/g" /proc/cmdline | grep -q -m1 "^ostree="; then
     if rpm-ostree install podman 2>&1 | grep -v "already provided"; then
-      echo 'Reboot to complete podman driver install.'
+      echo 'Reboot to complete podman install.'
     fi
   elif command -v dnf > /dev/null; then
     dnf -y install podman
