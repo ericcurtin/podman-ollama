@@ -41,9 +41,10 @@ fi
 trap cleanup EXIT
 server_init
 
+LLM="mistral"
 if [ -n "$1" ]; then
-  $PRE $CON exec $CON_PS ollama run llama2 "$1"
+  $PRE $CON exec $CON_PS ollama run $LLM "$1"
 else
-  $PRE $CON exec -it $CON_PS ollama run llama2
+  $PRE $CON exec -it $CON_PS ollama run $LLM
 fi
 
