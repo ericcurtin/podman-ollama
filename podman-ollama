@@ -5,7 +5,7 @@ usage() {
     echo "  podman-ollama [OPTION...] PROMPT"
     echo
     echo "Options:"
-    echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and NVIDIA, useful for systems with both AMD and NVIDIA present. If neither AMD or NVIDIA GPU, use NVIDIA"
+    echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h,--help        - Usage help"
     echo "  -m,--model MODEL - Select non-default model (default: $LLM) "
     echo "  -                - Read from stdin"
@@ -25,7 +25,7 @@ server_init() {
     ADD="--device /dev/dri"
   fi
 
-  if [ "$GPU" = "NVIDIA" ]; then
+  if [ "$GPU" = "OTHER" ]; then
     POST="latest"
   elif [ "$GPU" = "AMD"] || [ -e "/dev/kfd" ]; then
     ADD="$ADD --device /dev/kfd"
@@ -60,7 +60,7 @@ specify_gpu() {
   if [ -n "$GPU" ]; then
     shopt -s nocasematch
     case "$GPU" in
-      NVIDIA ) GPU="NVIDIA";;
+      OTHER ) GPU="OTHER";;
       AMD) GPU="AMD";;
       *) echo "Unknown GPU: $GPU"; exit 1;;
     esac
