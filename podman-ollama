@@ -5,6 +5,7 @@ usage() {
     echo "  podman-ollama [OPTION...] PROMPT"
     echo
     echo "Options:"
+    echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and NVIDIA, useful for systems with both AMD and NVIDIA present. If neither AMD or NVIDIA GPU, use NVIDIA"
     echo "  -h,--help        - Usage help"
     echo "  -m,--model MODEL - Select non-default model (default: $LLM) "
     echo "  -                - Read from stdin"
@@ -20,11 +21,20 @@ server_init() {
     ADD="--device /dev/dri"
   fi
 
-  if [ -e "/dev/kfd" ]; then
-    ADD="$ADD --device /dev/kfd"
-    POST="rocm"
+  if [ -n "$GPU" ]; then
+    if [ "$GPU" = "AMD" ]; then
+      ADD="$ADD --device /dev/kfd"
+      POST="rocm"
+    else
+      POST="latest"
+    fi
   else
-    POST="latest"
+    if [ -e "/dev/kfd" ]; then
+      ADD="$ADD --device /dev/kfd"
+      POST="rocm"
+    else
+      POST="latest"
+    fi
   fi
 
   VOL="ollama:/root/.ollama"
@@ -59,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
+    -g|--gpu)
+      GPU="$2"
+      shift 2
+      ;;
     -m|--model)
       LLM="$2"
       shift 2
@@ -77,6 +91,17 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [ -n "$GPU" ]; then
+  shopt -s nocasematch
+  case "$GPU" in
+    NVIDIA ) GPU="NVIDIA";;
+    AMD) GPU="AMD";;
+    *) echo "Unknown GPU: $GPU"; exit 1;;
+  esac
+
+  shopt -u nocasematch
+fi
 
 select_container_manager
 trap cleanup EXIT
