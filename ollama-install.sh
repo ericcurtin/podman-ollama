@@ -210,15 +210,24 @@ fi
 # ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#rhel-8-rocky-8
 # ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#rhel-9-rocky-9
 # ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#fedora
-install_cuda_driver_yum() {
+install_nvidia_driver_yum() {
     status 'Installing NVIDIA repository...'
+    NTK=
     case $PACKAGE_MANAGER in
         yum)
             $SUDO $PACKAGE_MANAGER -y install yum-utils
             $SUDO $PACKAGE_MANAGER-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/$1$2/$(uname -m)/cuda-$1$2.repo
+            if [ -n "$OLLAMA_CONTAINER_MANAGER" ]; then
+                $SUDO $PACKAGE_MANAGER-config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+                NTK="nvidia-container-toolkit"
+            fi
             ;;
         dnf)
             $SUDO $PACKAGE_MANAGER config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/$1$2/$(uname -m)/cuda-$1$2.repo
+            if [ -n "$OLLAMA_CONTAINER_MANAGER" ]; then
+                $SUDO $PACKAGE_MANAGER-config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+                NTK="nvidia-container-toolkit"
+            fi
             ;;
     esac
 
@@ -236,14 +245,24 @@ install_cuda_driver_yum() {
         $SUDO $PACKAGE_MANAGER -y install nvidia-driver-latest-dkms
     fi
 
-    $SUDO $PACKAGE_MANAGER -y install cuda-drivers
+    $SUDO $PACKAGE_MANAGER -y install cuda-drivers $NTK
 }
 
 # ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#ubuntu
 # ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#debian
-install_cuda_driver_apt() {
+install_nvidia_driver_apt() {
     status 'Installing NVIDIA repository...'
     curl -fsSL -o $TEMP_DIR/cuda-keyring.deb https://developer.download.nvidia.com/compute/cuda/repos/$1$2/$(uname -m)/cuda-keyring_1.1-1_all.deb
+
+    NTK=
+    if [ -n "$OLLAMA_CONTAINER_MANAGER" ]; then
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+            | $SUDO gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+        curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+            | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+            | $SUDO tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+        NTK="nvidia-container-toolkit"
+    fi
 
     case $1 in
         debian)
@@ -260,7 +279,7 @@ install_cuda_driver_apt() {
     $SUDO apt-get update
 
     [ -n "$SUDO" ] && SUDO_E="$SUDO -E" || SUDO_E=
-    DEBIAN_FRONTEND=noninteractive $SUDO_E apt-get -y install cuda-drivers -q
+    DEBIAN_FRONTEND=noninteractive $SUDO_E apt-get -y install cuda-drivers $NTK -q
 }
 
 if [ ! -f "/etc/os-release" ]; then
@@ -285,14 +304,22 @@ fi
 
 if ! check_gpu nvidia-smi || [ -z "$(nvidia-smi | grep -o "CUDA Version: [0-9]*\.[0-9]*")" ]; then
     case $OS_NAME in
-        centos|rhel|autosd) install_cuda_driver_yum 'rhel' $(echo $OS_VERSION | cut -d '.' -f 1) ;;
-        rocky) install_cuda_driver_yum 'rhel' $(echo $OS_VERSION | cut -c1) ;;
-        fedora|fedora-asahi-remix) [ $OS_VERSION -lt '37' ] && install_cuda_driver_yum $OS_NAME $OS_VERSION || install_cuda_driver_yum $OS_NAME '37';;
-        amzn) install_cuda_driver_yum 'fedora' '37' ;;
-        debian) install_cuda_driver_apt $OS_NAME $OS_VERSION ;;
-        ubuntu) install_cuda_driver_apt $OS_NAME $(echo $OS_VERSION | sed 's/\.//') ;;
+        centos|rhel|autosd) install_nvidia_driver_yum 'rhel' $(echo $OS_VERSION | cut -d '.' -f 1) ;;
+        rocky) install_nvidia_driver_yum 'rhel' $(echo $OS_VERSION | cut -c1) ;;
+        fedora|fedora-asahi-remix) [ $OS_VERSION -lt '37' ] && install_nvidia_driver_yum $OS_NAME $OS_VERSION || install_nvidia_driver_yum $OS_NAME '37';;
+        amzn) install_nvidia_driver_yum 'fedora' '37' ;;
+        debian) install_nvidia_driver_apt $OS_NAME $OS_VERSION ;;
+        ubuntu) install_nvidia_driver_apt $OS_NAME $(echo $OS_VERSION | sed 's/\.//') ;;
         *) exit ;;
     esac
+fi
+
+if [ -n "$OLLAMA_CONTAINER_MANAGER" ]; then
+    $SUDO nvidia-ctk runtime configure --runtime=$OLLAMA_CONTAINER_MANAGER
+fi
+
+if [ "$OLLAMA_CONTAINER_MANAGER" = "docker" ]; then
+    $SUDO systemctl restart $OLLAMA_CONTAINER_MANAGER
 fi
 
 if ! lsmod | grep -q nvidia; then
