@@ -2,7 +2,7 @@
 
 usage() {
     echo "Usage:"
-    echo "  podman-ollama [OPTION...] PROMPT"
+    echo "  podman-ollama [OPTION...] [PROMPT]"
     echo
     echo "Options:"
     echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and OTHER"
