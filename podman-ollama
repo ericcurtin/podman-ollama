@@ -17,24 +17,21 @@ cleanup() {
 }
 
 server_init() {
+  specify_gpu
+  select_container_manager
+  trap cleanup EXIT
+
   if [ -e "/dev/dri" ]; then
     ADD="--device /dev/dri"
   fi
 
-  if [ -n "$GPU" ]; then
-    if [ "$GPU" = "AMD" ]; then
-      ADD="$ADD --device /dev/kfd"
-      POST="rocm"
-    else
-      POST="latest"
-    fi
+  if [ "$GPU" = "NVIDIA" ]; then
+    POST="latest"
+  elif [ "$GPU" = "AMD"] || [ -e "/dev/kfd" ]; then
+    ADD="$ADD --device /dev/kfd"
+    POST="rocm"
   else
-    if [ -e "/dev/kfd" ]; then
-      ADD="$ADD --device /dev/kfd"
-      POST="rocm"
-    else
-      POST="latest"
-    fi
+    POST="latest"
   fi
 
   VOL="ollama:/root/.ollama"
@@ -59,10 +56,27 @@ select_container_manager() {
   fi
 }
 
+specify_gpu() {
+  if [ -n "$GPU" ]; then
+    shopt -s nocasematch
+    case "$GPU" in
+      NVIDIA ) GPU="NVIDIA";;
+      AMD) GPU="AMD";;
+      *) echo "Unknown GPU: $GPU"; exit 1;;
+    esac
+
+    shopt -u nocasematch
+  fi
+}
+
+set_initial_vars() {
+  LLM="mistral"
+  STDIN="false"
+}
+
 set -e -o pipefail
 
-LLM="mistral"
-STDIN="false"
+set_initial_vars
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
@@ -92,19 +106,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [ -n "$GPU" ]; then
-  shopt -s nocasematch
-  case "$GPU" in
-    NVIDIA ) GPU="NVIDIA";;
-    AMD) GPU="AMD";;
-    *) echo "Unknown GPU: $GPU"; exit 1;;
-  esac
-
-  shopt -u nocasematch
-fi
-
-select_container_manager
-trap cleanup EXIT
 server_init
 
 if $STDIN; then
