@@ -39,6 +39,16 @@ server_init() {
   fi
 }
 
+select_container_manager() {
+  if command -v podman > /dev/null; then
+    CON="podman"
+  elif command -v docker > /dev/null; then
+    CON="docker"
+  else
+    CON="podman"
+  fi
+}
+
 set -e -o pipefail
 
 LLM="mistral"
@@ -68,14 +78,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if command -v podman > /dev/null; then
-  CON="podman"
-elif command -v docker > /dev/null; then
-  CON="docker"
-else
-  CON="podman"
-fi
-
+select_container_manager
 trap cleanup EXIT
 server_init
 

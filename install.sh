@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e -o pipefail
-
 available() {
   command -v $1 >/dev/null
 }
@@ -37,6 +35,8 @@ check_gpu() {
     NVIDIA="true"
   fi
 }
+
+set -e -o pipefail
 
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
