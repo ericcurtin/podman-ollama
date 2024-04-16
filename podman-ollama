@@ -27,7 +27,7 @@ server_init() {
 
   if [ "$GPU" = "OTHER" ]; then
     POST="latest"
-  elif [ "$GPU" = "AMD"] || [ -e "/dev/kfd" ]; then
+  elif [ "$GPU" = "AMD" ] || [ -e "/dev/kfd" ]; then
     ADD="$ADD --device /dev/kfd"
     POST="rocm"
   else
