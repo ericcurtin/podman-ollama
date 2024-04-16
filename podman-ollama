@@ -7,16 +7,31 @@ usage() {
     echo "Options:"
     echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h,--help        - Usage help"
-    echo "  -m,--model MODEL - Select non-default model (default: $LLM) "
+    echo "  -m,--model MODEL - Select non-default model (default: $LLM)"
+    echo "  -r,--root        - Run as a rootful, insecure container"
     echo "  -                - Read from stdin"
     echo
 }
 
 cleanup() {
-  $PRE $CON exec $CON_PS pkill ollama &
+  $SUDO $CON exec $CON_PS pkill ollama &
+}
+
+check_root() {
+  if [ "$EUID" -eq 0 ]; then
+    if ! $ROOT; then
+      echo "rootful podman-ollama is insecure, to proceed insecurely use: podman-ollama -r"
+      exit 3
+    fi
+  else
+    if $ROOT; then
+      SUDO="sudo"
+    fi
+  fi
 }
 
 server_init() {
+  check_root
   specify_gpu
   select_container_manager
   trap cleanup EXIT
@@ -38,7 +53,7 @@ server_init() {
   URL="docker.io/ollama/ollama:$POST"
   PRIV="--privileged"
   GPU="--gpus=all"
-  CON_PS=$($PRE $CON run --rm $PRIV -d $ADD $GPU -v"$HOME":"$HOME" -v$VOL $URL)
+  CON_PS=$($SUDO $CON run --rm $PRIV -d $ADD $GPU -v"$HOME":"$HOME" -v$VOL $URL)
   RET="$?"
   if [ "$RET" -ne 0 ]; then
     echo "$CON_PS"
@@ -62,7 +77,7 @@ specify_gpu() {
     case "$GPU" in
       OTHER ) GPU="OTHER";;
       AMD) GPU="AMD";;
-      *) echo "Unknown GPU: $GPU"; exit 1;;
+      *) echo "Unknown GPU: $GPU"; exit 2;;
     esac
 
     shopt -u nocasematch
@@ -72,6 +87,7 @@ specify_gpu() {
 set_initial_vars() {
   LLM="mistral"
   STDIN="false"
+  ROOT="false"
 }
 
 set -e -o pipefail
@@ -79,17 +95,21 @@ set -e -o pipefail
 set_initial_vars
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h|--help)
-      usage
-      exit 0
-      ;;
     -g|--gpu)
       GPU="$2"
       shift 2
       ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
     -m|--model)
       LLM="$2"
       shift 2
+      ;;
+    -r|--root)
+      ROOT="true"
+      shift 1
       ;;
     -)
       STDIN="true"
@@ -109,10 +129,10 @@ done
 server_init
 
 if $STDIN; then
-  $PRE $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
+  $SUDO $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
 elif [ -n "$1" ]; then
-  $PRE $CON exec $CON_PS ollama run $LLM "$1"
+  $SUDO $CON exec $CON_PS ollama run $LLM "$1"
 else
-  $PRE $CON exec -it $CON_PS ollama run $LLM
+  $SUDO $CON exec -it $CON_PS ollama run $LLM
 fi
 
