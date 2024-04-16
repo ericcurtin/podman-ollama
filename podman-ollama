@@ -1,5 +1,16 @@
 #!/bin/bash
 
+usage() {
+    echo "Usage:"
+    echo "  podman-ollama [OPTION...] PROMPT"
+    echo
+    echo "Options:"
+    echo "  -h,--help        - Usage help"
+    echo "  -m,--model MODEL - Select non-default model (default: $LLM) "
+    echo "  -                - Read from stdin"
+    echo
+}
+
 cleanup() {
   $PRE $CON exec $CON_PS pkill ollama &
 }
@@ -30,6 +41,33 @@ server_init() {
 
 set -e -o pipefail
 
+LLM="mistral"
+STDIN="false"
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -m|--model)
+      LLM="$2"
+      shift 2
+      ;;
+    -)
+      STDIN="true"
+      shift 1
+      ;;
+    -*|--*)
+      usage
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break;
+      ;;
+  esac
+done
+
 if command -v podman > /dev/null; then
   CON="podman"
 elif command -v docker > /dev/null; then
@@ -41,8 +79,9 @@ fi
 trap cleanup EXIT
 server_init
 
-LLM="mistral"
-if [ -n "$1" ]; then
+if $STDIN; then
+  $PRE $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
+elif [ -n "$1" ]; then
   $PRE $CON exec $CON_PS ollama run $LLM "$1"
 else
   $PRE $CON exec -it $CON_PS ollama run $LLM
