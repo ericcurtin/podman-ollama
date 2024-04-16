@@ -26,12 +26,14 @@ cleanup() {
   rm -rf "$TMP" &
 }
 
+lshw_display() {
+  $SUDO lshw -c display -numeric
+}
+
 check_gpu() {
   if available "lspci" && lspci -d '10de:' | grep -q 'NVIDIA'; then
     NVIDIA="true"
-  fi
-
-  if available "lshw" && $SUDO lshw -c display -numeric | grep -q 'vendor: .* \[10DE\]'; then
+  elif available "lshw" && lshw_display | grep -q 'vendor: .* \[10DE\]'; then
     NVIDIA="true"
   fi
 }
