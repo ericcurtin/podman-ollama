@@ -50,22 +50,27 @@ if [ "$(uname -s)" != "Linux" ]; then
 fi
 
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root"
-  exit 0
+  for BINDIR in $HOME/bin $HOME/.local/bin $HOME/bin; do
+    echo $PATH | grep -q $BINDIR && break || continue
+  done
+
+  echo "rootless install, will install podman-ollama only, installing in: $BINDIR"
 fi
 
 . /etc/os-release
 
-RPM_OSTREE="false"
-case $ID in
-  centos|rhel|autosd|rocky|fedora|fedora-asahi-remix|amzn) install_dnf ;;
-  debian|ubuntu) install_apt ;;
-esac
+if [ "$EUID" -eq 0 ]; then
+  RPM_OSTREE="false"
+  case $ID in
+    centos|rhel|autosd|rocky|fedora|fedora-asahi-remix|amzn) install_dnf ;;
+    debian|ubuntu) install_apt ;;
+  esac
+fi
 
 NVIDIA="false"
 check_gpu
 
-if ! $RPM_OSTREE; then
+if [ "$EUID" -eq 0 ] && ! $RPM_OSTREE; then
   # This is a downstream version of the ollama install script, until podman
   # related patches get reviewed:
   # https://github.com/ollama/ollama/pulls/ericcurtin
@@ -73,9 +78,11 @@ if ! $RPM_OSTREE; then
   curl -fsSL "https://$URL" | OLLAMA_CONTAINER_MANAGER="podman" sh
 fi
 
-for BINDIR in /usr/local/bin /usr/bin /bin; do
-  echo $PATH | grep -q $BINDIR && break || continue
-done
+if [ -z "$BINDIR" ]; then
+  for BINDIR in /usr/local/bin /usr/bin /bin; do
+    echo $PATH | grep -q $BINDIR && break || continue
+  done
+fi
 
 FROM="podman-ollama"
 if [ -z "$1" ]; then
@@ -86,9 +93,9 @@ if [ -z "$1" ]; then
   curl -fsSL -o "$FROM" "https://$URL"
 fi
 
-install -m755 "$FROM" $BINDIR/podman-ollama
+install -D -m755 "$FROM" $BINDIR/podman-ollama
 
-if $RPM_OSTREE; then
+if [ "$EUID" -eq 0 ] && $RPM_OSTREE; then
   echo "rpm-ostree installs are not fully automated for NVIDIA GPUs, if using NVIDIA refer to:"
   echo
   echo "  https://raw.githubusercontent.com/ericcurtin/podman-ollama/main/ollama-install.sh"
