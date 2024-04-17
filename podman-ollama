@@ -5,11 +5,12 @@ usage() {
     echo "  podman-ollama [OPTION...] [PROMPT]"
     echo
     echo "Options:"
-    echo "  -g,--gpu   GPU   - Specify a GPU, valid values are AMD and OTHER"
-    echo "  -h,--help        - Usage help"
-    echo "  -m,--model MODEL - Select non-default model (default: $LLM)"
-    echo "  -r,--root        - Run as a rootful, insecure container"
-    echo "  -                - Read from stdin"
+    echo "  -c,--container-manager CONMAN - Specify podman or docker, default: podman"
+    echo "  -g,--gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
+    echo "  -h,--help                     - Usage help"
+    echo "  -m,--model MODEL              - Select non-default model, default: $LLM"
+    echo "  -r,--root                     - Run as a rootful, insecure container"
+    echo "  -                             - Read from stdin"
     echo
 }
 
@@ -69,6 +70,17 @@ select_container_manager() {
   else
     CON="podman"
   fi
+
+  if [ -n "$CONMAN" ]; then
+    shopt -s nocasematch
+    case "$CONMAN" in
+      podman ) CON="podman";;
+      docker) CON="docker";;
+      *) echo "Unknown container manager: $CONMAN"; exit 2;;
+    esac
+
+    shopt -u nocasematch
+  fi
 }
 
 specify_gpu() {
@@ -95,6 +107,10 @@ set -e -o pipefail
 set_initial_vars
 while [[ $# -gt 0 ]]; do
   case $1 in
+    -c|--container-manager)
+      CONMAN="$2"
+      shift 2
+      ;;
     -g|--gpu)
       GPU="$2"
       shift 2
