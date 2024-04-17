@@ -46,13 +46,21 @@ server_init() {
     ADD="--device /dev/dri"
   fi
 
+  POST="latest"
   if [ "$GPU" = "OTHER" ]; then
     POST="latest"
-  elif [ "$GPU" = "AMD" ] || [ -e "/dev/kfd" ]; then
+  elif [ "$GPU" = "AMD" ]; then
     ADD="$ADD --device /dev/kfd"
     POST="rocm"
-  else
-    POST="latest"
+  elif [ -e "/dev/kfd" ]; then
+    for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
+      # AMD GPU needs more than 512M VRAM
+      if [ "$(cat $i)" -gt "600000000" ]; then
+        ADD="$ADD --device /dev/kfd"
+        POST="rocm"
+        break
+      fi
+    done
   fi
 
   VOL="ollama:/root/.ollama"
