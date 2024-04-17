@@ -21,14 +21,18 @@ cleanup() {
 check_root() {
   if [ "$EUID" -eq 0 ]; then
     if ! $ROOT; then
-      echo "to run as a rootful, insecure container, use this command as root user:"
+      echo "to run as a rootful, insecure container, use this command:"
       echo "  podman-ollama -r"
       exit 3
     fi
   elif $ROOT; then
-    echo "to run as a rootful, insecure container, use this command as root user:"
-    echo "  podman-ollama -r"
-    exit 4
+    if command -v sudo > /dev/null; then
+      SUDO="sudo"
+    else
+      echo "to run as a rootful, insecure container, use this command as root user:"
+      echo "  podman-ollama -r"
+      exit 4
+    fi
   fi
 }
 
