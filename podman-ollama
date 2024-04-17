@@ -8,7 +8,7 @@ usage() {
     echo "  -c,--container-manager CONMAN - Specify podman or docker, default: podman"
     echo "  -g,--gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h,--help                     - Usage help"
-    echo "  -m,--model MODEL              - Select non-default model, default: $LLM"
+    echo "  -m,--model MODEL              - Specify non-default model, default: $LLM"
     echo "  -r,--root                     - Run as a rootful, insecure container"
     echo "  -                             - Read from stdin"
     echo
