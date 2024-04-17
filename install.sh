@@ -40,6 +40,8 @@ check_gpu() {
 
 set -e -o pipefail
 
+[ "$(uname -s)" = "Linux" ] || error 'This script is intended to run on Linux only.'
+
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
   exit 0
@@ -56,7 +58,7 @@ esac
 NVIDIA="false"
 check_gpu
 
-if ! $NVIDIA && ! $RPM_OSTREE; then
+if ! $RPM_OSTREE; then
   # This is a downstream version of the ollama install script, until podman
   # related patches get reviewed:
   # https://github.com/ollama/ollama/pulls/ericcurtin
@@ -78,4 +80,20 @@ if [ -z "$1" ]; then
 fi
 
 install -m755 "$FROM" $BINDIR/podman-ollama
+
+if $RPM_OSTREE; then
+  echo "rpm-ostree installs are not fully automated for NVIDIA GPUs, if using NVIDIA refer to:"
+  echo
+  echo "  https://raw.githubusercontent.com/ericcurtin/podman-ollama/main/ollama-install.sh"
+  echo
+  echo "and ensure packages are installed for:"
+  echo
+  echo "  nvidia-container-toolkit"
+  echo "  nvidia-driver-latest-dkms"
+  echo "  cuda-drivers"
+  echo "  kernel-devel"
+  echo "  kernel-headers"
+  echo
+  echo "and reboot"
+fi
 
