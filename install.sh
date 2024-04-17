@@ -38,9 +38,16 @@ check_gpu() {
   fi
 }
 
+error() {
+  echo "ERROR $*"
+  exit 1
+}
+
 set -e -o pipefail
 
-[ "$(uname -s)" = "Linux" ] || error 'This script is intended to run on Linux only.'
+if [ "$(uname -s)" != "Linux" ]; then
+  error 'This script is intended to run on Linux only.'
+fi
 
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
