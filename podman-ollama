@@ -5,13 +5,14 @@ usage() {
     echo "  podman-ollama [OPTION...] [PROMPT]"
     echo
     echo "Options:"
-    echo "  -c,--container-manager CONMAN - Specify podman or docker, default: podman"
-    echo "  -g,--gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
-    echo "  -h,--help                     - Usage help"
-    echo "  -l,--log LOGFILE              - Specify logfile to redirect to, for GPU debug"
-    echo "  -m,--model MODEL              - Specify non-default model, default: $LLM"
-    echo "  -r,--root                     - Run as a rootful, insecure container"
-    echo "  -                             - Read from stdin"
+    echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
+    echo "  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
+    echo "  -h, --help                     - Usage help"
+    echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
+    echo "  -m, --model MODEL              - Specify non-default model, default: $LLM"
+    echo "  -r, --root                     - Run as a rootful, insecure container"
+    echo "  -v, --version                  - Show version information"
+    echo "  -                              - Read from stdin"
     echo
 }
 
@@ -154,6 +155,10 @@ while [[ $# -gt 0 ]]; do
       ROOT="true"
       shift 1
       ;;
+    -v|--version)
+      VERSION="$1"
+      shift 1
+      ;;
     -)
       STDIN="true"
       shift 1
@@ -171,7 +176,9 @@ done
 
 server_init
 
-if $STDIN; then
+if [ -n "$VERSION" ]; then
+  $SUDO $CON exec $CON_PS ollama $VERSION
+elif $STDIN; then
   $SUDO $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
 elif [ -n "$1" ]; then
   $SUDO $CON exec $CON_PS ollama run $LLM "$1"
