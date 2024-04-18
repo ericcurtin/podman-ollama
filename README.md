@@ -34,3 +34,36 @@ Podman: Containerized application management.
 >>> Send a message (/? for help)
 ```
 
+Full usage help:
+
+```
+$ podman-ollama -h
+The goal of podman-ollama is to make AI even more boring.
+
+Usage:
+  podman-ollama [prompt]
+  podman-ollama [options]
+  podman-ollama [command]
+
+Commands:
+  create      Create a model from a Modelfile
+  show        Show information for a model
+  run         Run a model, default if no command is specified
+  pull        Pull a model from a registry
+  push        Push a model to a registry
+  list        List models
+  cp          Copy a model
+  rm          Remove a model
+  help        Help about any command
+
+Options:
+  -c, --container-manager CONMAN - Specify podman or docker, default: podman
+  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER
+  -h, --help                     - Usage help
+  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug
+  -m, --model MODEL              - Specify non-default model, default: mistral
+  -r, --root                     - Run as a rootful, insecure container
+  -v, --version                  - Show version information
+  -                              - Read from stdin
+```
+

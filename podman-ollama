@@ -1,9 +1,11 @@
 #!/bin/bash
 
 usage() {
+    echo "The goal of podman-ollama is to make AI even more boring."
+    echo
     echo "Usage:"
     echo "  podman-ollama [prompt]"
-    echo "  podman-ollama [flags]"
+    echo "  podman-ollama [options]"
     echo "  podman-ollama [command]"
     echo
     echo "Commands:"
@@ -17,7 +19,7 @@ usage() {
     echo "  rm          Remove a model"
     echo "  help        Help about any command"
     echo
-    echo "Flags:"
+    echo "Options:"
     echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
     echo "  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h, --help                     - Usage help"
@@ -26,7 +28,6 @@ usage() {
     echo "  -r, --root                     - Run as a rootful, insecure container"
     echo "  -v, --version                  - Show version information"
     echo "  -                              - Read from stdin"
-    echo
 }
 
 cleanup() {
