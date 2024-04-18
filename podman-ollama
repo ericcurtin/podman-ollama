@@ -8,6 +8,7 @@ usage() {
     echo "  -c,--container-manager CONMAN - Specify podman or docker, default: podman"
     echo "  -g,--gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h,--help                     - Usage help"
+    echo "  -l,--log LOGFILE              - Specify logfile to redirect to, for GPU debug"
     echo "  -m,--model MODEL              - Specify non-default model, default: $LLM"
     echo "  -r,--root                     - Run as a rootful, insecure container"
     echo "  -                             - Read from stdin"
@@ -63,15 +64,24 @@ server_init() {
     done
   fi
 
-  VOL="ollama:/root/.ollama"
+  VOL="-vollama:/root/.ollama"
   URL="docker.io/ollama/ollama:$POST"
   PRIV="--privileged"
   GPU="--gpus=all"
-  CON_PS=$($SUDO $CON run --rm $PRIV -d $ADD $GPU -v"$HOME":"$HOME" -v$VOL $URL)
-  RET="$?"
-  if [ "$RET" -ne 0 ]; then
-    echo "$CON_PS"
-    exit $RET
+  if [ -n "$LOG" ]; then
+    CON_PS="$(cat /proc/sys/kernel/random/uuid)"
+    NAME="--name $CON_PS"
+    $SUDO $CON run --rm $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    while ! podman ps | grep -q $CON_PS; do
+      sleep 0.001
+    done
+  else
+    CON_PS=$($SUDO $CON run --rm $PRIV $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
+    RET="$?"
+    if [ "$RET" -ne 0 ]; then
+      echo "$CON_PS"
+      exit $RET
+    fi
   fi
 }
 
@@ -131,6 +141,10 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       usage
       exit 0
+      ;;
+    -l|--log)
+      LOG="$2"
+      shift 2
       ;;
     -m|--model)
       LLM="$2"
