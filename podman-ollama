@@ -2,9 +2,22 @@
 
 usage() {
     echo "Usage:"
-    echo "  podman-ollama [OPTION...] [PROMPT]"
+    echo "  podman-ollama [prompt]"
+    echo "  podman-ollama [flags]"
+    echo "  podman-ollama [command]"
     echo
-    echo "Options:"
+    echo "Commands:"
+    echo "  create      Create a model from a Modelfile"
+    echo "  show        Show information for a model"
+    echo "  run         Run a model, default if no command is specified"
+    echo "  pull        Pull a model from a registry"
+    echo "  push        Push a model to a registry"
+    echo "  list        List models"
+    echo "  cp          Copy a model"
+    echo "  rm          Remove a model"
+    echo "  help        Help about any command"
+    echo
+    echo "Flags:"
     echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
     echo "  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
     echo "  -h, --help                     - Usage help"
@@ -38,12 +51,7 @@ check_root() {
   fi
 }
 
-server_init() {
-  check_root
-  specify_gpu
-  select_container_manager
-  trap cleanup EXIT
-
+gpu_setup() {
   if [ -e "/dev/dri" ]; then
     ADD="--device /dev/dri"
   fi
@@ -63,6 +71,18 @@ server_init() {
         break
       fi
     done
+  fi
+}
+
+server_init() {
+  check_root
+  specify_gpu
+  select_container_manager
+  gpu_setup
+  trap cleanup EXIT
+
+  if [ -n "$OLLAMA_FILE" ]; then
+    ADD="$ADD -v"$OLLAMA_FILE":"$OLLAMA_FILE""
   fi
 
   VOL="-vollama:/root/.ollama"
@@ -131,6 +151,10 @@ set -e -o pipefail
 set_initial_vars
 while [[ $# -gt 0 ]]; do
   case $1 in
+    create|show|run|pull|push|list|cp|rm|help)
+      OLLAMA_CMD="$1"
+      break
+      ;;
     -c|--container-manager)
       CONMAN="$2"
       shift 2
@@ -174,10 +198,35 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [ "$1" = "create" ]; then
+  while [[ $# -gt 0 ]]; do
+    case $3 in
+        -f|--file)
+          OLLAMA_MODEL="$2"
+          OLLAMA_FILE="$(readlink -f $4)"
+          shift 4
+          break
+          ;;
+        *)
+          break;
+          ;;
+      esac
+  done
+
+  if [ -z "$OLLAMA_FILE" ] && [ -e "Modelfile" ]; then
+    OLLAMA_FILE="$(readlink -f Modelfile)"
+    shift 1
+  fi
+fi
+
 server_init
 
 if [ -n "$VERSION" ]; then
   $SUDO $CON exec $CON_PS ollama $VERSION
+elif [ -n "$OLLAMA_FILE" ]; then
+  $SUDO $CON exec $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
+elif [ -n "$OLLAMA_CMD" ]; then
+  $SUDO $CON exec $CON_PS ollama $*
 elif $STDIN; then
   $SUDO $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
 elif [ -n "$1" ]; then
