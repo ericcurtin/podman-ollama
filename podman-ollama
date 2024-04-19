@@ -334,7 +334,7 @@ if [ -n "$VERSION" ]; then
 elif [ -n "$OLLAMA_FILE" ]; then
   $SUDO $CON exec $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
 elif [ -n "$OLLAMA_CMD" ]; then
-  $SUDO $CON exec $T $CON_PS ollama $*
+  $SUDO $CON exec $T -i $CON_PS ollama $*
 elif $STDIN; then
   $SUDO $CON exec $T $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
