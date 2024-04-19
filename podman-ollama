@@ -112,6 +112,21 @@ server_init() {
       exit $RET
     fi
   fi
+
+  IS_SERVER_UP="false"
+  for i in {1..2}; do
+    if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
+      IS_SERVER_UP="true"
+      break
+    fi
+
+    sleep 0.001
+  done
+
+  if ! $IS_SERVER_UP; then
+    echo "Ollama service failed to be responsive"
+    exit 5
+  fi
 }
 
 select_container_manager() {
