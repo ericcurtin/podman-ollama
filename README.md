@@ -46,7 +46,7 @@ Usage:
   podman-ollama [command]
 
 Commands:
-  serve       Start ollama server
+  serve       Start ollama server (not required, other commands are serverless)
   create      Create a model from a Modelfile
   show        Show information for a model
   run         Run a model, default if no command is specified
@@ -67,5 +67,14 @@ Options:
   -r, --root                     - Run as a rootful, insecure container
   -v, --version                  - Show version information
   -                              - Read from stdin
+
+Configuration:
+  podman-ollama uses a simple text format to store customizations that are are
+  per user in "~/.podman-ollama/config". Such a configuration file may look
+  like this:
+
+    container-manager podman
+    gpu GPU
+    model gemma:2b
 ```
 
