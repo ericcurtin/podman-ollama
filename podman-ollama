@@ -88,7 +88,14 @@ server_init() {
 
   VOL="-vollama:/root/.ollama"
   URL="docker.io/ollama/ollama:$POST"
-  PRIV="--privileged"
+
+  # This was introduced as part of ChromeOS support, but there was concerns
+  # raised about rootful privileged containers, lets just do this in the rootless
+  # case for now.
+  if [ "$EUID" -ne 0 ]; then
+    PRIV="--privileged"
+  fi
+
   GPU="--gpus=all"
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
