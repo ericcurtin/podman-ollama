@@ -114,7 +114,7 @@ server_init() {
   fi
 
   IS_SERVER_UP="false"
-  for i in {1..2}; do
+  for i in {1..16}; do
     if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
       IS_SERVER_UP="true"
       break
