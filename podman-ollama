@@ -96,7 +96,12 @@ server_init() {
     PRIV="--privileged"
   fi
 
-  GPU="--gpus=all"
+  if [ "$GPU" = "CPU" ]; then
+    GPU=
+  else
+    GPU="--gpus=all"
+  fi
+
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
     NAME="--name $CON_PS"
@@ -154,7 +159,7 @@ specify_gpu() {
   if [ -n "$GPU" ]; then
     shopt -s nocasematch
     case "$GPU" in
-      CPU ) CPU="CPU"
+      CPU ) GPU="CPU"
       GPU ) GPU="GPU"
       NVIDIA ) GPU="NVIDIA";;
       AMD) GPU="AMD";;
