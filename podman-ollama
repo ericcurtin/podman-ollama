@@ -276,15 +276,15 @@ if [ "$1" = "serve" ]; then
 fi
 
 if [ -n "$VERSION" ]; then
-  $SUDO $CON exec $CON_PS ollama $VERSION
+  $SUDO $CON exec -t $CON_PS ollama $VERSION
 elif [ -n "$OLLAMA_FILE" ]; then
-  $SUDO $CON exec $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
+  $SUDO $CON exec -t $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
 elif [ -n "$OLLAMA_CMD" ]; then
-  $SUDO $CON exec $CON_PS ollama $*
+  $SUDO $CON exec -t $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CON exec $CON_PS ollama run $LLM < /dev/stdin
+  $SUDO $CON exec -t $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
-  $SUDO $CON exec $CON_PS ollama run $LLM "$1"
+  $SUDO $CON exec -t $CON_PS ollama run $LLM "$1"
 else
   $SUDO $CON exec -it $CON_PS ollama run $LLM
 fi
