@@ -9,6 +9,7 @@ usage() {
     echo "  podman-ollama [command]"
     echo
     echo "Commands:"
+    echo "  serve       Start ollama server"
     echo "  create      Create a model from a Modelfile"
     echo "  show        Show information for a model"
     echo "  run         Run a model, default if no command is specified"
@@ -25,6 +26,7 @@ usage() {
     echo "  -h, --help                     - Usage help"
     echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
     echo "  -m, --model MODEL              - Specify non-default model, default: $LLM"
+    echo "  -p, --publish                  - Publish a container's port to the host"
     echo "  -r, --root                     - Run as a rootful, insecure container"
     echo "  -v, --version                  - Show version information"
     echo "  -                              - Read from stdin"
@@ -80,7 +82,10 @@ server_init() {
   specify_gpu
   select_container_manager
   gpu_setup
-  trap cleanup EXIT
+
+  if [ "$OLLAMA_CMD" != "serve" ]; then
+    trap cleanup EXIT
+  fi
 
   if [ -n "$OLLAMA_FILE" ]; then
     ADD="$ADD -v"$OLLAMA_FILE":"$OLLAMA_FILE""
@@ -116,12 +121,12 @@ server_init() {
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
     NAME="--name $CON_PS"
-    $SUDO $CON run --rm $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    $SUDO $CON run --rm $PUBLISH $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CON run --rm $PRIV $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -192,7 +197,7 @@ set -e -o pipefail
 set_initial_vars
 while [[ $# -gt 0 ]]; do
   case $1 in
-    create|show|run|pull|push|list|cp|rm|help)
+    serve|create|show|run|pull|push|list|cp|rm|help)
       OLLAMA_CMD="$1"
       break
       ;;
@@ -214,6 +219,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -m|--model)
       LLM="$2"
+      shift 2
+      ;;
+    -p|--publish)
+      PUBLISH="-p $2"
       shift 2
       ;;
     -r|--root)
@@ -261,6 +270,10 @@ if [ "$1" = "create" ]; then
 fi
 
 server_init
+
+if [ "$1" = "serve" ]; then
+  exit 0
+fi
 
 if [ -n "$VERSION" ]; then
   $SUDO $CON exec $CON_PS ollama $VERSION
