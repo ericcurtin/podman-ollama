@@ -21,7 +21,7 @@ usage() {
     echo
     echo "Options:"
     echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
-    echo "  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER"
+    echo "  -g, --gpu GPU                  - Specify a GPU: AMD, NVIDIA, GPU or CPU"
     echo "  -h, --help                     - Usage help"
     echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
     echo "  -m, --model MODEL              - Specify non-default model, default: $LLM"
@@ -53,12 +53,12 @@ check_root() {
 }
 
 gpu_setup() {
-  if [ -e "/dev/dri" ]; then
+  if [ -e "/dev/dri" ] && [ "$GPU" != "CPU" ]; then
     ADD="--device /dev/dri"
   fi
 
   POST="latest"
-  if [ "$GPU" = "OTHER" ]; then
+  if [ "$GPU" = "NVIDIA" ] || [ "$GPU" = "GPU" ] || [ "$GPU" = "CPU" ]; then
     POST="latest"
   elif [ "$GPU" = "AMD" ]; then
     ADD="$ADD --device /dev/kfd"
@@ -90,19 +90,24 @@ server_init() {
   URL="docker.io/ollama/ollama:$POST"
 
   # This was introduced as part of ChromeOS support, but there was concerns
-  # raised about rootful privileged containers, lets just do this in the rootless
-  # case for now.
+  # raised about rootful privileged containers, lets just do this in the
+  # rootless case for now.
   if [ "$EUID" -ne 0 ]; then
     PRIV="--privileged"
   fi
 
-  GPU="--gpus=all"
+  if [ "$GPU" = "CPU" ]; then
+    GPU=
+  else
+    GPU="--gpus=all"
+  fi
+
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
     NAME="--name $CON_PS"
     $SUDO $CON run --rm $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
-      sleep 0.001
+      sleep 0.01
     done
   else
     CON_PS=$($SUDO $CON run --rm $PRIV $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
@@ -114,13 +119,13 @@ server_init() {
   fi
 
   IS_SERVER_UP="false"
-  for i in {1..2}; do
+  for i in {1..16}; do
     if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
       IS_SERVER_UP="true"
       break
     fi
 
-    sleep 0.001
+    sleep 0.01
   done
 
   if ! $IS_SERVER_UP; then
@@ -154,7 +159,9 @@ specify_gpu() {
   if [ -n "$GPU" ]; then
     shopt -s nocasematch
     case "$GPU" in
-      OTHER ) GPU="OTHER";;
+      CPU ) GPU="CPU"
+      GPU ) GPU="GPU"
+      NVIDIA ) GPU="NVIDIA";;
       AMD) GPU="AMD";;
       *) echo "Unknown GPU: $GPU"; exit 2;;
     esac
