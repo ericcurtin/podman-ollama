@@ -101,10 +101,15 @@ server_init() {
   if [ "$GPU" = "CPU" ]; then
     GPU=
   else
+    GPU="--gpus=all"
     if [ $CON = "podman" ]; then
-        GPU="--device nvidia.com/gpu=all"
-    else
-        GPU="--gpus=all"
+      if [ "$GPU" = "NVIDIA" ]; then
+        GPU="$GPU --device nvidia.com/gpu=all"
+      elif command -v nvidia-smi > /dev/null; then
+        if [ "$GPU" = "GPU" ] || [ -z "$GPU" ]; then
+          GPU="$GPU --device nvidia.com/gpu=all"
+        fi
+      fi
     fi
   fi
 
