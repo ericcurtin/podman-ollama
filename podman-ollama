@@ -92,14 +92,20 @@ server_init() {
   # This was introduced as part of ChromeOS support, but there was concerns
   # raised about rootful privileged containers, lets just do this in the
   # rootless case for now.
-  if [ "$EUID" -ne 0 ]; then
+  if [ "$EUID" -eq 0 ]; then
+    PRIV="--security-opt=label=disable"
+  else # if rootless, just be --privileged
     PRIV="--privileged"
   fi
 
   if [ "$GPU" = "CPU" ]; then
     GPU=
   else
-    GPU="--gpus=all"
+    if [ $CON = "podman" ]; then
+        GPU="--device nvidia.com/gpu=all"
+    else
+        GPU="--gpus=all"
+    fi
   fi
 
   if [ -n "$LOG" ]; then
