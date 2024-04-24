@@ -159,8 +159,8 @@ specify_gpu() {
   if [ -n "$GPU" ]; then
     shopt -s nocasematch
     case "$GPU" in
-      CPU ) GPU="CPU"
-      GPU ) GPU="GPU"
+      CPU ) GPU="CPU";;
+      GPU ) GPU="GPU";;
       NVIDIA ) GPU="NVIDIA";;
       AMD) GPU="AMD";;
       *) echo "Unknown GPU: $GPU"; exit 2;;
