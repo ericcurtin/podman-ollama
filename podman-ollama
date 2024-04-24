@@ -269,7 +269,7 @@ elif [ -n "$OLLAMA_FILE" ]; then
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CON exec $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CON exec $CON_PS ollama run $LLM "$(cat /dev/stdin)"
+  $SUDO $CON exec $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
   $SUDO $CON exec $CON_PS ollama run $LLM "$1"
 else
