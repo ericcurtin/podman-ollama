@@ -46,6 +46,7 @@ Usage:
   podman-ollama [command]
 
 Commands:
+  serve       Start ollama server
   create      Create a model from a Modelfile
   show        Show information for a model
   run         Run a model, default if no command is specified
@@ -58,10 +59,11 @@ Commands:
 
 Options:
   -c, --container-manager CONMAN - Specify podman or docker, default: podman
-  -g, --gpu GPU                  - Specify a GPU, valid values are AMD and OTHER
+  -g, --gpu GPU                  - Specify a GPU: AMD, NVIDIA, GPU or CPU
   -h, --help                     - Usage help
   -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug
   -m, --model MODEL              - Specify non-default model, default: mistral
+  -p, --publish                  - Publish a container's port to the host
   -r, --root                     - Run as a rootful, insecure container
   -v, --version                  - Show version information
   -                              - Read from stdin
