@@ -195,7 +195,7 @@ specify_gpu() {
   fi
 }
 
-set_initial_vars() {
+set_default_vals() {
   LLM="mistral"
   STDIN="false"
   ROOT="false"
@@ -206,7 +206,7 @@ read_cfg_val() {
   sed -ne "s/^$1\s//pg" $cfg_file 2> /dev/null
 }
 
-read_cfg_file() {
+set_config_vals() {
   local cfg_file="~/.podman-ollama/config"
   local conman=$(read_cfg_val "container-manager")
   if [ -n "$conman" ]; then
@@ -239,63 +239,66 @@ read_cfg_file() {
   fi
 }
 
+set_cmdline_vals() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      serve|create|show|run|pull|push|list|cp|rm|help)
+        OLLAMA_CMD="$1"
+        break
+        ;;
+      -c|--container-manager)
+        CONMAN="$2"
+        shift 2
+        ;;
+      -g|--gpu)
+        GPU="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -l|--log)
+        LOG="$2"
+        shift 2
+        ;;
+      -m|--model)
+        LLM="$2"
+        shift 2
+        ;;
+      -p|--publish)
+        PUBLISH="-p $2"
+        shift 2
+        ;;
+      -r|--root)
+        ROOT="true"
+        shift 1
+        ;;
+      -v|--version)
+        VERSION="$1"
+        shift 1
+        ;;
+      -)
+        STDIN="true"
+        shift 1
+        ;;
+      -*|--*)
+        usage
+        echo "Unknown option $1"
+        exit 1
+        ;;
+      *)
+        break;
+        ;;
+    esac
+  done
+}
+
 set -e -o pipefail
 
-set_initial_vars
-read_cfg_file
-
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    serve|create|show|run|pull|push|list|cp|rm|help)
-      OLLAMA_CMD="$1"
-      break
-      ;;
-    -c|--container-manager)
-      CONMAN="$2"
-      shift 2
-      ;;
-    -g|--gpu)
-      GPU="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    -l|--log)
-      LOG="$2"
-      shift 2
-      ;;
-    -m|--model)
-      LLM="$2"
-      shift 2
-      ;;
-    -p|--publish)
-      PUBLISH="-p $2"
-      shift 2
-      ;;
-    -r|--root)
-      ROOT="true"
-      shift 1
-      ;;
-    -v|--version)
-      VERSION="$1"
-      shift 1
-      ;;
-    -)
-      STDIN="true"
-      shift 1
-      ;;
-    -*|--*)
-      usage
-      echo "Unknown option $1"
-      exit 1
-      ;;
-    *)
-      break;
-      ;;
-  esac
-done
+set_default_vals
+set_config_vals
+set_cmdline_vals "$@"
 
 if [ "$1" = "create" ]; then
   while [[ $# -gt 0 ]]; do
