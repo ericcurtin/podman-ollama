@@ -1,35 +1,44 @@
 #!/bin/bash
 
 usage() {
-    echo "The goal of podman-ollama is to make AI even more boring."
-    echo
-    echo "Usage:"
-    echo "  podman-ollama [prompt]"
-    echo "  podman-ollama [options]"
-    echo "  podman-ollama [command]"
-    echo
-    echo "Commands:"
-    echo "  serve       Start ollama server"
-    echo "  create      Create a model from a Modelfile"
-    echo "  show        Show information for a model"
-    echo "  run         Run a model, default if no command is specified"
-    echo "  pull        Pull a model from a registry"
-    echo "  push        Push a model to a registry"
-    echo "  list        List models"
-    echo "  cp          Copy a model"
-    echo "  rm          Remove a model"
-    echo "  help        Help about any command"
-    echo
-    echo "Options:"
-    echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
-    echo "  -g, --gpu GPU                  - Specify a GPU: AMD, NVIDIA, GPU or CPU"
-    echo "  -h, --help                     - Usage help"
-    echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
-    echo "  -m, --model MODEL              - Specify non-default model, default: $LLM"
-    echo "  -p, --publish                  - Publish a container's port to the host"
-    echo "  -r, --root                     - Run as a rootful, insecure container"
-    echo "  -v, --version                  - Show version information"
-    echo "  -                              - Read from stdin"
+  echo "The goal of podman-ollama is to make AI even more boring."
+  echo
+  echo "Usage:"
+  echo "  podman-ollama [prompt]"
+  echo "  podman-ollama [options]"
+  echo "  podman-ollama [command]"
+  echo
+  echo "Commands:"
+  echo "  serve       Start ollama server (not required, other commands are serverless)"
+  echo "  create      Create a model from a Modelfile"
+  echo "  show        Show information for a model"
+  echo "  run         Run a model, default if no command is specified"
+  echo "  pull        Pull a model from a registry"
+  echo "  push        Push a model to a registry"
+  echo "  list        List models"
+  echo "  cp          Copy a model"
+  echo "  rm          Remove a model"
+  echo "  help        Help about any command"
+  echo
+  echo "Options:"
+  echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
+  echo "  -g, --gpu GPU                  - Specify a GPU: AMD, NVIDIA, GPU or CPU"
+  echo "  -h, --help                     - Usage help"
+  echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
+  echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
+  echo "  -p, --publish                  - Publish a container's port to the host"
+  echo "  -r, --root                     - Run as a rootful, insecure container"
+  echo "  -v, --version                  - Show version information"
+  echo "  -                              - Read from stdin"
+  echo
+  echo "Configuration:"
+  echo "  podman-ollama uses a simple text format to store customizations that are are"
+  echo "  per user in \"~/.podman-ollama/config\". Such a configuration file may look"
+  echo "  like this:"
+  echo
+  echo "    container-manager podman"
+  echo "    gpu GPU"
+  echo "    model gemma:2b"
 }
 
 cleanup() {
@@ -192,9 +201,49 @@ set_initial_vars() {
   ROOT="false"
 }
 
+read_cfg_val() {
+  local cfg_file="$HOME/.podman-ollama/config"
+  sed -ne "s/^$1\s//pg" $cfg_file 2> /dev/null
+}
+
+read_cfg_file() {
+  local cfg_file="~/.podman-ollama/config"
+  local conman=$(read_cfg_val "container-manager")
+  if [ -n "$conman" ]; then
+    CONMAN="$conman"
+  fi
+
+  local gpu=$(read_cfg_val "gpu")
+  if [ -n "$gpu" ]; then
+    GPU="$gpu"
+  fi
+
+  local log=$(read_cfg_val "log")
+  if [ -n "$log" ]; then
+    LOG="$log"
+  fi
+
+  local model=$(read_cfg_val "model")
+  if [ -n "$model" ]; then
+    LLM="$model"
+  fi
+
+  local publish=$(read_cfg_val "publish")
+  if [ -n "$publish" ]; then
+    PUBLISH="-p $publish"
+  fi
+
+  local root=$(read_cfg_val "root")
+  if [ -n "$root" ]; then
+    ROOT="true"
+  fi
+}
+
 set -e -o pipefail
 
 set_initial_vars
+read_cfg_file
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     serve|create|show|run|pull|push|list|cp|rm|help)
