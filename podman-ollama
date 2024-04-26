@@ -19,6 +19,7 @@ usage() {
   echo "  cp          Copy a model"
   echo "  rm          Remove a model"
   echo "  help        Help about any command"
+  echo "  generate    Generate structured data based on containers, pods or volumes"
   echo
   echo "Options:"
   echo "  -c, --container-manager CONMAN - Specify podman or docker, default: podman"
@@ -129,13 +130,13 @@ server_init() {
 
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
-    NAME="--name $CON_PS"
-    $SUDO $CON run --rm $PUBLISH $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    local name="--name $CON_PS"
+    $SUDO $CON run --rm $PUBLISH $PRIV $name $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -199,6 +200,7 @@ set_default_vals() {
   LLM="mistral"
   STDIN="false"
   ROOT="false"
+  GENERATE="false"
 }
 
 read_cfg_val() {
@@ -239,66 +241,67 @@ set_config_vals() {
   fi
 }
 
-set_cmdline_vals() {
-  while [[ $# -gt 0 ]]; do
-    case $1 in
-      serve|create|show|run|pull|push|list|cp|rm|help)
-        OLLAMA_CMD="$1"
-        break
-        ;;
-      -c|--container-manager)
-        CONMAN="$2"
-        shift 2
-        ;;
-      -g|--gpu)
-        GPU="$2"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      -l|--log)
-        LOG="$2"
-        shift 2
-        ;;
-      -m|--model)
-        LLM="$2"
-        shift 2
-        ;;
-      -p|--publish)
-        PUBLISH="-p $2"
-        shift 2
-        ;;
-      -r|--root)
-        ROOT="true"
-        shift 1
-        ;;
-      -v|--version)
-        VERSION="$1"
-        shift 1
-        ;;
-      -)
-        STDIN="true"
-        shift 1
-        ;;
-      -*|--*)
-        usage
-        echo "Unknown option $1"
-        exit 1
-        ;;
-      *)
-        break;
-        ;;
-    esac
-  done
-}
-
 set -e -o pipefail
 
 set_default_vals
 set_config_vals
-set_cmdline_vals "$@"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    serve|create|show|run|pull|push|list|cp|rm|help)
+      OLLAMA_CMD="$1"
+      break
+      ;;
+    generate)
+      PODMAN_CMD="$1"
+      break
+      ;;
+    -c|--container-manager)
+      CONMAN="$2"
+      shift 2
+      ;;
+    -g|--gpu)
+      GPU="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -l|--log)
+      LOG="$2"
+      shift 2
+      ;;
+    -m|--model)
+      LLM="$2"
+      shift 2
+      ;;
+    -p|--publish)
+      PUBLISH="-p $2"
+      shift 2
+      ;;
+    -r|--root)
+      ROOT="true"
+      shift 1
+      ;;
+    -v|--version)
+      VERSION="$1"
+      shift 1
+      ;;
+    -)
+      STDIN="true"
+      shift 1
+      ;;
+    -*|--*)
+      usage
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break;
+      ;;
+  esac
+done
 
 if [ "$1" = "create" ]; then
   while [[ $# -gt 0 ]]; do
@@ -321,6 +324,16 @@ if [ "$1" = "create" ]; then
   fi
 fi
 
+ARGV=("$@")
+if [ "$1" = "generate" ]; then
+  for (( j=0; j < $#; j++ )); do
+    if [ "${ARGV[j]}" = "--name" ]; then
+      j=$((j + 1))
+      NAME="--name ${ARGV[j]}"
+    fi
+  done
+fi
+
 server_init
 
 if [ "$1" = "serve" ]; then
@@ -332,7 +345,9 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
-if [ -n "$VERSION" ]; then
+if [ "$1" = "generate" ]; then
+  $SUDO $CON "$@"
+elif [ -n "$VERSION" ]; then
   $SUDO $CON exec $T $CON_PS ollama $VERSION
 elif [ -n "$OLLAMA_FILE" ]; then
   $SUDO $CON exec $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
