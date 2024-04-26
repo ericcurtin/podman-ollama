@@ -56,6 +56,7 @@ Commands:
   cp          Copy a model
   rm          Remove a model
   help        Help about any command
+  generate    Generate structured data based on containers, pods or volumes
 
 Options:
   -c, --container-manager CONMAN - Specify podman or docker, default: podman
@@ -64,7 +65,7 @@ Options:
   -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug
   -m, --model MODEL              - Specify non-default model, default: mistral
   -p, --publish                  - Publish a container's port to the host
-  -r, --root                     - Run as a rootful, insecure container
+  -r, --root                     - Run as a rootful container
   -v, --version                  - Show version information
   -                              - Read from stdin
 
@@ -77,4 +78,3 @@ Configuration:
     gpu GPU
     model gemma:2b
 ```
-
