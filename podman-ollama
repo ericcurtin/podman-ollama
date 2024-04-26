@@ -27,7 +27,7 @@ usage() {
   echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
   echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
   echo "  -p, --publish                  - Publish a container's port to the host"
-  echo "  -r, --root                     - Run as a rootful, insecure container"
+  echo "  -r, --root                     - Run as a rootful container"
   echo "  -v, --version                  - Show version information"
   echo "  -                              - Read from stdin"
   echo
