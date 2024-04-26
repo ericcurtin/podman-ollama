@@ -27,6 +27,7 @@ usage() {
   echo "  -h, --help                     - Usage help"
   echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
   echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
+  echo "  --privileged                   - Give extended privileges to container"
   echo "  -p, --publish                  - Publish a container's port to the host"
   echo "  -r, --root                     - Run as a rootful container"
   echo "  -v, --version                  - Show version information"
@@ -104,15 +105,6 @@ server_init() {
   VOL="-vollama:/root/.ollama"
   URL="docker.io/ollama/ollama:$POST"
 
-  # This was introduced as part of ChromeOS support, but there was concerns
-  # raised about rootful privileged containers, lets just do this in the
-  # rootless case for now.
-  if [ "$EUID" -eq 0 ]; then
-    PRIV="--security-opt=label=disable"
-  else # if rootless, just be --privileged
-    PRIV="--privileged"
-  fi
-
   if [ "$GPU" = "CPU" ]; then
     GPU=
   else
@@ -131,12 +123,12 @@ server_init() {
   if [ -n "$LOG" ]; then
     CON_PS="$(cat /proc/sys/kernel/random/uuid)"
     local name="--name $CON_PS"
-    $SUDO $CON run --rm $PUBLISH $PRIV $name $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    $SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -239,6 +231,11 @@ set_config_vals() {
   if [ -n "$root" ]; then
     ROOT="true"
   fi
+
+  local privileged=$(read_cfg_val "privileged")
+  if [ -n "$privileged" ]; then
+    PRIV="--privileged"
+  fi
 }
 
 set -e -o pipefail
@@ -279,6 +276,10 @@ while [[ $# -gt 0 ]]; do
     -p|--publish)
       PUBLISH="-p $2"
       shift 2
+      ;;
+    --privileged)
+      PRIV="--privileged"
+      shift 1
       ;;
     -r|--root)
       ROOT="true"
