@@ -71,9 +71,9 @@ Options:
   -                              - Read from stdin
 
 Configuration:
-  podman-ollama uses a simple text format to store customizations that are are
-  per user in "~/.podman-ollama/config". Such a configuration file may look
-  like this:
+  podman-ollama uses a simple text format to store customizations that are per
+  user in "~/.podman-ollama/config". Such a configuration file may look like
+  this:
 
     container-manager podman
     gpu GPU
