@@ -222,12 +222,12 @@ set_config_vals() {
   fi
 
   local root=$(read_cfg_val "root")
-  if [ -n "$root" ]; then
+  if [ "$root" = "true" ]; then
     ROOT="true"
   fi
 
   local privileged=$(read_cfg_val "privileged")
-  if [ -n "$privileged" ]; then
+  if [ "$privileged" = "true" ]; then
     PRIV="--privileged"
   fi
 }
