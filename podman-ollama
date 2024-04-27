@@ -34,9 +34,9 @@ usage() {
   echo "  -                              - Read from stdin"
   echo
   echo "Configuration:"
-  echo "  podman-ollama uses a simple text format to store customizations that are are"
-  echo "  per user in \"~/.podman-ollama/config\". Such a configuration file may look"
-  echo "  like this:"
+  echo "  podman-ollama uses a simple text format to store customizations that are per"
+  echo "  user in \"~/.podman-ollama/config\". Such a configuration file may look like"
+  echo "  this:"
   echo
   echo "    container-manager podman"
   echo "    gpu GPU"
@@ -162,20 +162,16 @@ select_container_manager() {
   fi
 
   if [ -n "$CONMAN" ]; then
-    shopt -s nocasematch
     case "$CONMAN" in
       podman ) CON="podman";;
       docker) CON="docker";;
       *) echo "Unknown container manager: $CONMAN"; exit 2;;
     esac
-
-    shopt -u nocasematch
   fi
 }
 
 specify_gpu() {
   if [ -n "$GPU" ]; then
-    shopt -s nocasematch
     case "$GPU" in
       CPU ) GPU="CPU";;
       GPU ) GPU="GPU";;
@@ -183,8 +179,6 @@ specify_gpu() {
       AMD) GPU="AMD";;
       *) echo "Unknown GPU: $GPU"; exit 2;;
     esac
-
-    shopt -u nocasematch
   fi
 }
 
@@ -239,6 +233,7 @@ set_config_vals() {
 }
 
 set -e -o pipefail
+shopt -s nocasematch
 
 set_default_vals
 set_config_vals
@@ -304,30 +299,23 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+ARGV=("$@")
 if [ "$1" = "create" ]; then
-  while [[ $# -gt 0 ]]; do
-    case $3 in
-        -f|--file)
-          OLLAMA_MODEL="$2"
-          OLLAMA_FILE="$(readlink -f $4)"
-          shift 4
-          break
-          ;;
-        *)
-          break;
-          ;;
-      esac
+  OLLAMA_MODEL="$2"
+  for (( j=0; j < $#; ++j )); do
+    if [ "${ARGV[j]}" = "--file" ] || [ "${ARGV[j]}" = "-f" ]; then
+      j=$((j + 1))
+      OLLAMA_FILE="$(readlink -f ${ARGV[j]})"
+    fi
   done
 
   if [ -z "$OLLAMA_FILE" ] && [ -e "Modelfile" ]; then
     OLLAMA_FILE="$(readlink -f Modelfile)"
-    shift 1
   fi
 fi
 
-ARGV=("$@")
 if [ "$1" = "generate" ]; then
-  for (( j=0; j < $#; j++ )); do
+  for (( j=0; j < $#; ++j )); do
     if [ "${ARGV[j]}" = "--name" ]; then
       j=$((j + 1))
       NAME="--name ${ARGV[j]}"
@@ -346,11 +334,12 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
-if [ "$1" = "generate" ]; then
+if [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CON "$@"
 elif [ -n "$VERSION" ]; then
   $SUDO $CON exec $T $CON_PS ollama $VERSION
-elif [ -n "$OLLAMA_FILE" ]; then
+elif [ "$OLLAMA_CMD" = "create" ]; then
+  shift 2
   $SUDO $CON exec $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CON exec $T -i $CON_PS ollama $*
