@@ -70,6 +70,9 @@ Options:
   -v, --version                  - Show version information
   -                              - Read from stdin
 
+Environment Variables:
+  OLLAMA_HOST  The host:port or base URL of the Ollama server (e.g. http://localhost:11434)
+
 Configuration:
   podman-ollama uses a simple text format to store customizations that are per
   user in "~/.podman-ollama/config". Such a configuration file may look like

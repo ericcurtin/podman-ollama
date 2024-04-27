@@ -33,6 +33,9 @@ usage() {
   echo "  -v, --version                  - Show version information"
   echo "  -                              - Read from stdin"
   echo
+  echo "Environment Variables:"
+  echo "  OLLAMA_HOST  The host:port or base URL of the Ollama server (e.g. http://localhost:11434)"
+  echo
   echo "Configuration:"
   echo "  podman-ollama uses a simple text format to store customizations that are per"
   echo "  user in \"~/.podman-ollama/config\". Such a configuration file may look like"
@@ -136,19 +139,21 @@ server_init() {
     fi
   fi
 
-  IS_SERVER_UP="false"
-  for i in {1..16}; do
-    if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
-      IS_SERVER_UP="true"
-      break
+  if [ -z "$OLLAMA_HOST" ]; then
+    IS_SERVER_UP="false"
+    for i in {1..16}; do
+      if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
+        IS_SERVER_UP="true"
+        break
+      fi
+
+      sleep 0.01
+    done
+
+    if ! $IS_SERVER_UP; then
+      echo "Ollama service failed to be responsive"
+      exit 5
     fi
-
-    sleep 0.01
-  done
-
-  if ! $IS_SERVER_UP; then
-    echo "Ollama service failed to be responsive"
-    exit 5
   fi
 }
 
@@ -334,20 +339,24 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
+if [ -n "$OLLAMA_HOST" ]; then
+  ENV="-e OLLAMA_HOST=$OLLAMA_HOST"
+fi
+
 if [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CON "$@"
 elif [ -n "$VERSION" ]; then
-  $SUDO $CON exec $T $CON_PS ollama $VERSION
+  $SUDO $CON exec $ENV $T $CON_PS ollama $VERSION
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
-  $SUDO $CON exec $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
+  $SUDO $CON exec $ENV $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
 elif [ -n "$OLLAMA_CMD" ]; then
-  $SUDO $CON exec $T -i $CON_PS ollama $*
+  $SUDO $CON exec $ENV $T -i $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CON exec $T $CON_PS ollama run $LLM < /dev/stdin
+  $SUDO $CON exec $ENV $T $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
-  $SUDO $CON exec $T $CON_PS ollama run $LLM "$1"
+  $SUDO $CON exec $ENV $T $CON_PS ollama run $LLM "$1"
 else
-  $SUDO $CON exec $T -i $CON_PS ollama run $LLM
+  $SUDO $CON exec $ENV $T -i $CON_PS ollama run $LLM
 fi
 
