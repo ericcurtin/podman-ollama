@@ -46,8 +46,14 @@ usage() {
   echo "    model gemma:2b"
 }
 
+cleanup_impl() {
+  $SUDO $CON exec $CON_PS pkill ollama
+  sleep 1
+  $SUDO $CON rm -f $CON_PS
+}
+
 cleanup() {
-  $SUDO $CON exec $CON_PS pkill ollama &
+  cleanup_impl > /dev/null 2>&1 &
 }
 
 check_root() {
@@ -82,7 +88,7 @@ gpu_setup() {
   elif [ -e "/dev/kfd" ]; then
     for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
       # AMD GPU needs more than 512M VRAM
-      if [ "$(cat $i)" -gt "600000000" ]; then
+      if [ "$(< $i)" -gt "600000000" ]; then
         ADD="$ADD --device /dev/kfd"
         POST="rocm"
         break
@@ -124,7 +130,7 @@ server_init() {
   fi
 
   if [ -n "$LOG" ]; then
-    CON_PS="$(cat /proc/sys/kernel/random/uuid)"
+    CON_PS="$(< /proc/sys/kernel/random/uuid)"
     local name="--name $CON_PS"
     $SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
@@ -195,12 +201,16 @@ set_default_vals() {
 }
 
 read_cfg_val() {
-  local cfg_file="$HOME/.podman-ollama/config"
-  sed -ne "s/^$1\s//pg" $cfg_file 2> /dev/null
+  echo "$CFG_FILE" | sed -ne "s/^$1\s//pg" 2> /dev/null
 }
 
 set_config_vals() {
-  local cfg_file="~/.podman-ollama/config"
+  CFG_FILE="$HOME/.podman-ollama/config"
+  if [ ! -e "$CFG_FILE" ]; then
+    return
+  fi
+
+  CFG_FILE="$(< "$CFG_FILE")"
   local conman=$(read_cfg_val "container-manager")
   if [ -n "$conman" ]; then
     CONMAN="$conman"
