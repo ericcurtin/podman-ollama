@@ -79,6 +79,10 @@ gpu_setup() {
     ADD="--device /dev/dri"
   fi
 
+  if [ -e "/dev/dri/renderD128" ] && [ "$GPU" != "CPU" ]; then
+    ADD="$ADD --device /dev/dri/renderD128"
+  fi
+
   POST="latest"
   if [ "$GPU" = "NVIDIA" ] || [ "$GPU" = "GPU" ] || [ "$GPU" = "CPU" ]; then
     POST="latest"
