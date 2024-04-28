@@ -34,7 +34,7 @@ usage() {
   echo "  -                              - Read from stdin"
   echo
   echo "Environment Variables:"
-  echo "  OLLAMA_HOST  The host:port or base URL of the Ollama server (e.g. http://localhost:11434)"
+  echo "  OLLAMA_HOST  The host:port or base URL of the Ollama server (e.g. http://some_remotehost:11434)"
   echo
   echo "Configuration:"
   echo "  podman-ollama uses a simple text format to store customizations that are per"
