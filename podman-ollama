@@ -100,7 +100,6 @@ gpu_setup() {
 server_init() {
   check_root
   specify_gpu
-  select_container_manager
   gpu_setup
 
   if [ "$OLLAMA_CMD" != "serve" ]; then
@@ -171,14 +170,6 @@ select_container_manager() {
   else
     CON="podman"
   fi
-
-  if [ -n "$CONMAN" ]; then
-    case "$CONMAN" in
-      podman ) CON="podman";;
-      docker) CON="docker";;
-      *) echo "Unknown container manager: $CONMAN"; exit 2;;
-    esac
-  fi
 }
 
 specify_gpu() {
@@ -198,6 +189,7 @@ set_default_vals() {
   STDIN="false"
   ROOT="false"
   GENERATE="false"
+  select_container_manager
 }
 
 read_cfg_val() {
@@ -213,7 +205,7 @@ set_config_vals() {
   CFG_FILE="$(< "$CFG_FILE")"
   local conman=$(read_cfg_val "container-manager")
   if [ -n "$conman" ]; then
-    CONMAN="$conman"
+    CON="$conman"
   fi
 
   local gpu=$(read_cfg_val "gpu")
@@ -264,7 +256,7 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     -c|--container-manager)
-      CONMAN="$2"
+      CON="$2"
       shift 2
       ;;
     -g|--gpu)
