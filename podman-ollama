@@ -74,32 +74,53 @@ check_root() {
   fi
 }
 
-gpu_setup() {
-  if [ -e "/dev/dri" ] && [ "$GPU" != "CPU" ]; then
-    ADD="--device /dev/dri"
+add_dri() {
+  if [ -e "/dev/dri" ]; then
+    ADD="$ADD --device /dev/dri"
   fi
+}
 
-  POST="latest"
-  if [ "$GPU" = "NVIDIA" ] || [ "$GPU" = "GPU" ] || [ "$GPU" = "CPU" ]; then
-    POST="latest"
-  elif [ "$GPU" = "AMD" ]; then
+add_kfd() {
+  if [ -e "/dev/kfd" ]; then
     ADD="$ADD --device /dev/kfd"
     POST="rocm"
-  elif [ -e "/dev/kfd" ]; then
+  fi
+}
+
+gpu_setup() {
+  if [ "$GPU" = "CPU" ]; then
+    POST="latest"
+    ADD=
+  elif [ "$GPU" = "AMD" ]; then
+    POST="rocm"
+    ADD="$ADD --gpus=all"
+    add_dri
+    add_kfd
+  elif [ "$GPU" = "NVIDIA" ]; then
+    POST="latest"
+    ADD="$ADD --gpus=all"
+    ADD="$ADD --device nvidia.com/gpu=all"
+    add_dri
+  else
+    POST="latest"
+    ADD="$ADD --gpus=all"
+    add_dri
     for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
       # AMD GPU needs more than 512M VRAM
       if [ "$(< $i)" -gt "600000000" ]; then
-        ADD="$ADD --device /dev/kfd"
-        POST="rocm"
+        add_kfd
         break
       fi
     done
+
+    if command -v nvidia-smi > /dev/null; then
+      ADD="$ADD --device nvidia.com/gpu=all"
+    fi
   fi
 }
 
 server_init() {
   check_root
-  specify_gpu
   gpu_setup
 
   if [ "$OLLAMA_CMD" != "serve" ]; then
@@ -113,30 +134,15 @@ server_init() {
   VOL="-vollama:/root/.ollama"
   URL="docker.io/ollama/ollama:$POST"
 
-  if [ "$GPU" = "CPU" ]; then
-    GPU=
-  else
-    GPU="--gpus=all"
-    if [ $CON = "podman" ]; then
-      if [ "$GPU" = "NVIDIA" ]; then
-        GPU="$GPU --device nvidia.com/gpu=all"
-      elif command -v nvidia-smi > /dev/null; then
-        if [ "$GPU" = "GPU" ] || [ -z "$GPU" ]; then
-          GPU="$GPU --device nvidia.com/gpu=all"
-        fi
-      fi
-    fi
-  fi
-
   if [ -n "$LOG" ]; then
     CON_PS="$(< /proc/sys/kernel/random/uuid)"
     local name="--name $CON_PS"
-    $SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD $GPU -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    $SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD $GPU -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD -v"$HOME":"$HOME" $VOL -d $URL)
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -172,23 +178,12 @@ select_container_manager() {
   fi
 }
 
-specify_gpu() {
-  if [ -n "$GPU" ]; then
-    case "$GPU" in
-      CPU ) GPU="CPU";;
-      GPU ) GPU="GPU";;
-      NVIDIA ) GPU="NVIDIA";;
-      AMD) GPU="AMD";;
-      *) echo "Unknown GPU: $GPU"; exit 2;;
-    esac
-  fi
-}
-
 set_default_vals() {
   LLM="mistral"
   STDIN="false"
   ROOT="false"
   GENERATE="false"
+  GPU="GPU"
   select_container_manager
 }
 
