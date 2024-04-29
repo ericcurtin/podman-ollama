@@ -306,6 +306,7 @@ if [ "$1" = "create" ]; then
     if [ "${ARGV[j]}" = "--file" ] || [ "${ARGV[j]}" = "-f" ]; then
       j=$((j + 1))
       OLLAMA_FILE="$(readlink -f ${ARGV[j]})"
+      break
     fi
   done
 
@@ -319,6 +320,7 @@ if [ "$1" = "generate" ]; then
     if [ "${ARGV[j]}" = "--name" ]; then
       j=$((j + 1))
       NAME="--name ${ARGV[j]}"
+      break
     fi
   done
 fi
