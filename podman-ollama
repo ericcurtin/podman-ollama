@@ -47,9 +47,9 @@ usage() {
 }
 
 cleanup_impl() {
-  $SUDO $CON exec $CON_PS pkill ollama
+  $SUDO $CONMAN exec $CON_PS pkill ollama
   sleep 1
-  $SUDO $CON rm -f $CON_PS
+  $SUDO $CONMAN rm -f $CON_PS
 }
 
 cleanup() {
@@ -139,12 +139,12 @@ server_init() {
   if [ -n "$LOG" ]; then
     CON_PS="$(< /proc/sys/kernel/random/uuid)"
     local name="--name $CON_PS"
-    $SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+    $SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CON run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$($SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD -v"$HOME":"$HOME" $VOL -d $URL)
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -155,7 +155,7 @@ server_init() {
   if [ -z "$OLLAMA_HOST" ]; then
     IS_SERVER_UP="false"
     for i in {1..16}; do
-      if $SUDO $CON exec $CON_PS ollama ls > /dev/null 2>&1; then
+      if $SUDO $CONMAN exec $CON_PS ollama ls > /dev/null 2>&1; then
         IS_SERVER_UP="true"
         break
       fi
@@ -172,11 +172,11 @@ server_init() {
 
 select_container_manager() {
   if command -v podman > /dev/null; then
-    CON="podman"
+    CONMAN="podman"
   elif command -v docker > /dev/null; then
-    CON="docker"
+    CONMAN="docker"
   else
-    CON="podman"
+    CONMAN="podman"
   fi
 }
 
@@ -202,7 +202,7 @@ set_config_vals() {
   CFG_FILE="$(< "$CFG_FILE")"
   local conman=$(read_cfg_val "container-manager")
   if [ -n "$conman" ]; then
-    CON="$conman"
+    CONMAN="$conman"
   fi
 
   local gpu=$(read_cfg_val "gpu")
@@ -253,7 +253,7 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     -c|--container-manager)
-      CON="$2"
+      CONMAN="$2"
       shift 2
       ;;
     -g|--gpu)
@@ -341,17 +341,17 @@ if [ -n "$OLLAMA_HOST" ]; then
 fi
 
 if [ "$PODMAN_CMD" = "generate" ]; then
-  $SUDO $CON "$@"
+  $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
-  $SUDO $CON exec $ENV $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
+  $SUDO $CONMAN exec $ENV $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
 elif [ -n "$OLLAMA_CMD" ]; then
-  $SUDO $CON exec $ENV $T -i $CON_PS ollama $*
+  $SUDO $CONMAN exec $ENV $T -i $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CON exec $ENV $T $CON_PS ollama run $LLM < /dev/stdin
+  $SUDO $CONMAN exec $ENV $T $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
-  $SUDO $CON exec $ENV $T $CON_PS ollama run $LLM "$1"
+  $SUDO $CONMAN exec $ENV $T $CON_PS ollama run $LLM "$1"
 else
-  $SUDO $CON exec $ENV $T -i $CON_PS ollama run $LLM
+  $SUDO $CONMAN exec $ENV $T -i $CON_PS ollama run $LLM
 fi
 
