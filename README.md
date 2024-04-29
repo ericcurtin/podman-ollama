@@ -71,7 +71,8 @@ Options:
   -                              - Read from stdin
 
 Environment Variables:
-  OLLAMA_HOST  The host:port or base URL of the Ollama server (e.g. http://some_remotehost:11434)
+  OLLAMA_HOST  The host:port or base URL of the Ollama server
+               (e.g. http://some_remotehost:11434)
 
 Configuration:
   podman-ollama uses a simple text format to store customizations that are per
