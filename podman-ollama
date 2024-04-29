@@ -121,6 +121,10 @@ gpu_setup() {
   fi
 }
 
+conman_run() {
+  $SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $1 $ADD -v"$HOME":"$HOME" $VOL $URL
+}
+
 server_init() {
   check_root
   gpu_setup
@@ -129,8 +133,8 @@ server_init() {
     trap cleanup EXIT
   fi
 
-  if [ -n "$OLLAMA_FILE" ]; then
-    ADD="$ADD -v"$OLLAMA_FILE":"$OLLAMA_FILE""
+  if [ -n "$OLLAMA_F" ]; then
+    ADD="$ADD -v"$OLLAMA_F":"$OLLAMA_F""
   fi
 
   VOL="-vollama:/root/.ollama"
@@ -139,12 +143,12 @@ server_init() {
   if [ -n "$LOG" ]; then
     CON_PS="$(< /proc/sys/kernel/random/uuid)"
     local name="--name $CON_PS"
-    $SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $name $ADD -v"$HOME":"$HOME" $VOL $URL > "$LOG" 2>&1 &
+      conman_run "$name" > "$LOG" 2>&1 &
     while ! podman ps | grep -q $CON_PS; do
       sleep 0.01
     done
   else
-    CON_PS=$($SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $NAME $ADD -v"$HOME":"$HOME" $VOL -d $URL)
+    CON_PS=$(conman_run "$NAME -d")
     RET="$?"
     if [ "$RET" -ne 0 ]; then
       echo "$CON_PS"
@@ -301,17 +305,17 @@ done
 
 ARGV=("$@")
 if [ "$1" = "create" ]; then
-  OLLAMA_MODEL="$2"
+  OLLAMA_MOD="$2"
   for (( j=0; j < $#; ++j )); do
     if [ "${ARGV[j]}" = "--file" ] || [ "${ARGV[j]}" = "-f" ]; then
       j=$((j + 1))
-      OLLAMA_FILE="$(readlink -f ${ARGV[j]})"
+      OLLAMA_F="$(readlink -f ${ARGV[j]})"
       break
     fi
   done
 
-  if [ -z "$OLLAMA_FILE" ] && [ -e "Modelfile" ]; then
-    OLLAMA_FILE="$(readlink -f Modelfile)"
+  if [ -z "$OLLAMA_F" ] && [ -e "Modelfile" ]; then
+    OLLAMA_F="$(readlink -f Modelfile)"
   fi
 fi
 
@@ -344,7 +348,7 @@ if [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
-  $SUDO $CONMAN exec $ENV $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
+  $SUDO $CONMAN exec $ENV $T $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F" $*
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CONMAN exec $ENV $T -i $CON_PS ollama $*
 elif $STDIN; then
