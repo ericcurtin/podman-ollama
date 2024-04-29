@@ -81,10 +81,8 @@ add_dri() {
 }
 
 add_kfd() {
-  if [ -e "/dev/kfd" ]; then
-    ADD="$ADD --device /dev/kfd"
-    POST="rocm"
-  fi
+  ADD="$ADD --device /dev/kfd"
+  POST="rocm"
 }
 
 gpu_setup() {
@@ -95,7 +93,9 @@ gpu_setup() {
     POST="rocm"
     ADD="$ADD --gpus=all"
     add_dri
-    add_kfd
+    if [ -e "/dev/kfd" ]; then
+      add_kfd
+    fi
   elif [ "$GPU" = "NVIDIA" ]; then
     POST="latest"
     ADD="$ADD --gpus=all"
@@ -105,13 +105,15 @@ gpu_setup() {
     POST="latest"
     ADD="$ADD --gpus=all"
     add_dri
-    for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
-      # AMD GPU needs more than 512M VRAM
-      if [ "$(< $i)" -gt "600000000" ]; then
-        add_kfd
-        break
-      fi
-    done
+    if [ -e "/dev/kfd" ]; then
+      for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
+        # AMD GPU needs more than 512M VRAM
+        if [ "$(< $i)" -gt "600000000" ]; then
+          add_kfd
+          break
+        fi
+      done
+    fi
 
     if command -v nvidia-smi > /dev/null; then
       ADD="$ADD --device nvidia.com/gpu=all"
@@ -242,7 +244,7 @@ set_config_vals
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    serve|create|show|run|pull|push|list|cp|rm|help)
+    serve|create|show|run|pull|push|list|cp|rm|help|-v|--version)
       OLLAMA_CMD="$1"
       break
       ;;
@@ -280,10 +282,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -r|--root)
       ROOT="true"
-      shift 1
-      ;;
-    -v|--version)
-      VERSION="$1"
       shift 1
       ;;
     -)
@@ -342,8 +340,6 @@ fi
 
 if [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CON "$@"
-elif [ -n "$VERSION" ]; then
-  $SUDO $CON exec $ENV $T $CON_PS ollama $VERSION
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
   $SUDO $CON exec $ENV $T $CON_PS ollama create $OLLAMA_MODEL -f "$OLLAMA_FILE" $*
