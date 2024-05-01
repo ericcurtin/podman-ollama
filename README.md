@@ -46,7 +46,7 @@ Usage:
   podman-ollama [command]
 
 Commands:
-  serve       Start ollama server (not required, other commands are serverless)
+  serve       Start ollama server (not required)
   create      Create a model from a Modelfile
   show        Show information for a model
   run         Run a model, default if no command is specified
