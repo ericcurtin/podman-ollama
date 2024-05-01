@@ -9,7 +9,7 @@ usage() {
   echo "  podman-ollama [command]"
   echo
   echo "Commands:"
-  echo "  serve       Start ollama server (not required, other commands are serverless)"
+  echo "  serve       Start ollama server (not required)"
   echo "  create      Create a model from a Modelfile"
   echo "  show        Show information for a model"
   echo "  run         Run a model, default if no command is specified"
