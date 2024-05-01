@@ -138,6 +138,14 @@ server_init() {
     trap cleanup EXIT
   fi
 
+  if [ -n "$OLLAMA_HOST" ]; then
+    ADD="$ADD -t --entrypoint /bin/bash"
+    TEST_CMD="true"
+    EV="-e OLLAMA_HOST=$OLLAMA_HOST"
+  else
+    TEST_CMD="ollama ls"
+  fi
+
   if [ -n "$OLLAMA_F" ]; then
     ADD="$ADD -v"$OLLAMA_F":"$OLLAMA_F""
   fi
@@ -161,21 +169,19 @@ server_init() {
     fi
   fi
 
-  if [ -z "$OLLAMA_HOST" ]; then
-    IS_SERVER_UP="false"
-    for i in {1..16}; do
-      if $SUDO $CONMAN exec $CON_PS ollama ls > /dev/null 2>&1; then
-        IS_SERVER_UP="true"
-        break
-      fi
-
-      sleep 0.01
-    done
-
-    if ! $IS_SERVER_UP; then
-      echo "Ollama service failed to be responsive"
-      exit 5
+  IS_SERVER_UP="false"
+  for i in {1..16}; do
+    if $SUDO $CONMAN exec $CON_PS $TEST_CMD > /dev/null 2>&1; then
+      IS_SERVER_UP="true"
+      break
     fi
+
+    sleep 0.01
+  done
+
+  if ! $IS_SERVER_UP; then
+    echo "Ollama service failed to be responsive"
+    exit 5
   fi
 }
 
@@ -345,22 +351,18 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
-if [ -n "$OLLAMA_HOST" ]; then
-  ENV="-e OLLAMA_HOST=$OLLAMA_HOST"
-fi
-
 if [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
-  $SUDO $CONMAN exec $ENV $T $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F" $*
+  $SUDO $CONMAN exec $EV $T $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F" $*
 elif [ -n "$OLLAMA_CMD" ]; then
-  $SUDO $CONMAN exec $ENV $T -i $CON_PS ollama $*
+  $SUDO $CONMAN exec $EV $T -i $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CONMAN exec $ENV $T $CON_PS ollama run $LLM < /dev/stdin
+  $SUDO $CONMAN exec $EV $T $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
-  $SUDO $CONMAN exec $ENV $T $CON_PS ollama run $LLM "$1"
+  $SUDO $CONMAN exec $EV $T $CON_PS ollama run $LLM "$1"
 else
-  $SUDO $CONMAN exec $ENV $T -i $CON_PS ollama run $LLM
+  $SUDO $CONMAN exec $EV $T -i $CON_PS ollama run $LLM
 fi
 
