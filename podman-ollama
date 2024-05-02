@@ -58,7 +58,7 @@ cleanup_impl() {
   sleep 1
   $SUDO $CONMAN rm -f $CON_PS
   $SUDO $CONMAN rm -f $CHATBOT_PS
-  $SUDO $CONMAN pod rm -f chatbot
+  $SUDO $CONMAN pod rm -f $POD_PS
 }
 
 cleanup() {
@@ -151,8 +151,8 @@ server_init() {
   fi
 
   if $CHATBOT; then
-    $SUDO $CONMAN pod create -p 8501:8501 -n chatbot
-    ADD="$ADD --pod chatbot"
+    POD_PS="$($SUDO $CONMAN pod create -p 8501:8501)"
+    ADD="$ADD --pod $POD_PS"
   fi
 
   if [ -n "$OLLAMA_F" ]; then
@@ -367,7 +367,7 @@ fi
 
 if $CHATBOT; then
   echo -e "\n  Local URL: http://localhost:8501"
-  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod chatbot -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
