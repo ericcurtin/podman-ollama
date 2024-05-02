@@ -151,8 +151,13 @@ server_init() {
   fi
 
   if $CHATBOT; then
-    POD_PS="$($SUDO $CONMAN pod create -p 8501:8501)"
-    ADD="$ADD --pod $POD_PS"
+    for CHATBOT_PORT in {8501..9001}; do
+      POD_PS="$($SUDO $CONMAN pod create -p $CHATBOT_PORT:8501)"
+      ADD="$ADD --pod $POD_PS"
+      if $SUDO $CONMAN pod start $POD_PS > /dev/null 2>&1; then
+        break
+      fi
+    done
   fi
 
   if [ -n "$OLLAMA_F" ]; then
@@ -366,7 +371,7 @@ if [ -t 1 ]; then
 fi
 
 if $CHATBOT; then
-  echo -e "\n  Local URL: http://localhost:8501"
+  echo -e "\n  Local URL: http://localhost:$CHATBOT_PORT"
   $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
