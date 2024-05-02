@@ -379,7 +379,7 @@ if [ -t 1 ]; then
 fi
 
 if $CHATBOT; then
-  echo -e "\n  Local URL: http://localhost:$PORT"
+  echo -e "\n  Local URL: http://localhost:$PORT\n"
   $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
 elif $OPEN_WEBUI; then
   echo -e "\n  Local URL: http://localhost:$PORT\n"
