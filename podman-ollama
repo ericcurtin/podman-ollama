@@ -366,6 +366,7 @@ if [ -t 1 ]; then
 fi
 
 if $CHATBOT; then
+  echo -e "\n  Local URL: http://localhost:8501"
   $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod chatbot -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
