@@ -48,6 +48,7 @@ Usage:
 Commands:
   serve       Start ollama server (not required)
   create      Create a model from a Modelfile
+  chatbot     Set up chatbot UI interface
   show        Show information for a model
   run         Run a model, default if no command is specified
   pull        Pull a model from a registry

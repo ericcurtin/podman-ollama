@@ -11,6 +11,7 @@ usage() {
   echo "Commands:"
   echo "  serve       Start ollama server (not required)"
   echo "  create      Create a model from a Modelfile"
+  echo "  chatbot     Set up chatbot UI interface"
   echo "  show        Show information for a model"
   echo "  run         Run a model, default if no command is specified"
   echo "  pull        Pull a model from a registry"
@@ -52,9 +53,12 @@ available() {
 }
 
 cleanup_impl() {
+  set +e
   $SUDO $CONMAN exec $CON_PS pkill ollama
   sleep 1
   $SUDO $CONMAN rm -f $CON_PS
+  $SUDO $CONMAN rm -f $CHATBOT_PS
+  $SUDO $CONMAN pod rm -f chatbot
 }
 
 cleanup() {
@@ -146,6 +150,11 @@ server_init() {
     TEST_CMD="ollama ls"
   fi
 
+  if $CHATBOT; then
+    $SUDO $CONMAN pod create -p 8501:8501 -n chatbot
+    ADD="$ADD --pod chatbot"
+  fi
+
   if [ -n "$OLLAMA_F" ]; then
     ADD="$ADD -v"$OLLAMA_F":"$OLLAMA_F""
   fi
@@ -200,6 +209,7 @@ set_default_vals() {
   STDIN="false"
   ROOT="false"
   GENERATE="false"
+  CHATBOT="false"
   GPU="GPU"
   select_container_manager
 }
@@ -265,6 +275,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     generate)
       PODMAN_CMD="$1"
+      break
+      ;;
+    chatbot)
+      CHATBOT="true"
       break
       ;;
     -c|--container-manager)
@@ -351,7 +365,9 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
-if [ "$PODMAN_CMD" = "generate" ]; then
+if $CHATBOT; then
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod chatbot -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
+elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2
