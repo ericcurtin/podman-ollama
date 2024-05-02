@@ -12,6 +12,7 @@ usage() {
   echo "  serve       Start ollama server (not required)"
   echo "  create      Create a model from a Modelfile"
   echo "  chatbot     Set up chatbot UI interface"
+  echo "  open-webui  Set up open-webui UI interface"
   echo "  show        Show information for a model"
   echo "  run         Run a model, default if no command is specified"
   echo "  pull        Pull a model from a registry"
@@ -150,9 +151,9 @@ server_init() {
     TEST_CMD="ollama ls"
   fi
 
-  if $CHATBOT; then
-    for CHATBOT_PORT in {8501..9001}; do
-      POD_PS="$($SUDO $CONMAN pod create -p $CHATBOT_PORT:8501)"
+  if $CHATBOT || $OPEN_WEBUI; then
+    for PORT in {8501..9001}; do
+      POD_PS="$($SUDO $CONMAN pod create -p $PORT:$PORT_IN)"
       ADD="$ADD --pod $POD_PS"
       if $SUDO $CONMAN pod start $POD_PS > /dev/null 2>&1; then
         break
@@ -215,6 +216,7 @@ set_default_vals() {
   ROOT="false"
   GENERATE="false"
   CHATBOT="false"
+  OPEN_WEBUI="false"
   GPU="GPU"
   select_container_manager
 }
@@ -284,6 +286,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     chatbot)
       CHATBOT="true"
+      PORT_IN="8501"
+      break
+      ;;
+    open-webui)
+      OPEN_WEBUI="true"
+      PORT_IN="8080"
       break
       ;;
     -c|--container-manager)
@@ -371,8 +379,11 @@ if [ -t 1 ]; then
 fi
 
 if $CHATBOT; then
-  echo -e "\n  Local URL: http://localhost:$CHATBOT_PORT"
+  echo -e "\n  Local URL: http://localhost:$PORT"
   $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
+elif $OPEN_WEBUI; then
+  echo -e "\n  Local URL: http://localhost:$PORT\n"
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e OLLAMA_BASE_URL="http://localhost:11434" -v"$HOME":"$HOME" ghcr.io/open-webui/open-webui:main
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
