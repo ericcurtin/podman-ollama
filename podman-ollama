@@ -380,7 +380,7 @@ elif [ "$OLLAMA_CMD" = "create" ]; then
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CONMAN exec $EV $T -i $CON_PS ollama $*
 elif $STDIN; then
-  $SUDO $CONMAN exec $EV $T -i $CON_PS ollama run $LLM < /dev/stdin
+  $SUDO $CONMAN exec $EV -i $CON_PS ollama run $LLM < /dev/stdin
 elif [ -n "$1" ]; then
   $SUDO $CONMAN exec $EV $T -i $CON_PS ollama run $LLM "$1"
 else
