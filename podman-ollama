@@ -91,8 +91,10 @@ add_dri() {
 }
 
 add_kfd() {
-  ADD="$ADD --device /dev/kfd"
-  POST="rocm"
+  if [ -e "/dev/kfd" ]; then
+    POST="rocm"
+    ADD="$ADD --device /dev/kfd"
+  fi
 }
 
 gpu_setup() {
@@ -102,9 +104,7 @@ gpu_setup() {
   elif [ "$GPU" = "AMD" ]; then
     POST="rocm"
     add_dri
-    if [ -e "/dev/kfd" ]; then
-      add_kfd
-    fi
+    add_kfd
   elif [ "$GPU" = "NVIDIA" ]; then
     POST="latest"
     ADD="$ADD --gpus=all --device nvidia.com/gpu=all"
@@ -112,16 +112,7 @@ gpu_setup() {
   else
     POST="latest"
     add_dri
-    if [ -e "/dev/kfd" ]; then
-      for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
-        # AMD GPU needs more than 512M VRAM
-        if [ "$(< $i)" -gt "600000000" ]; then
-          add_kfd
-          break
-        fi
-      done
-    fi
-
+    add_kfd
     if available nvidia-smi; then
       ADD="$ADD --gpus=all --device nvidia.com/gpu=all"
     fi
