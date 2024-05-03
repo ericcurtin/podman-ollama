@@ -101,19 +101,16 @@ gpu_setup() {
     ADD=
   elif [ "$GPU" = "AMD" ]; then
     POST="rocm"
-    ADD="$ADD --gpus=all"
     add_dri
     if [ -e "/dev/kfd" ]; then
       add_kfd
     fi
   elif [ "$GPU" = "NVIDIA" ]; then
     POST="latest"
-    ADD="$ADD --gpus=all"
-    ADD="$ADD --device nvidia.com/gpu=all"
+    ADD="$ADD --gpus=all --device nvidia.com/gpu=all"
     add_dri
   else
     POST="latest"
-    ADD="$ADD --gpus=all"
     add_dri
     if [ -e "/dev/kfd" ]; then
       for i in /sys/bus/pci/devices/*/mem_info_vram_total; do
@@ -126,7 +123,7 @@ gpu_setup() {
     fi
 
     if available nvidia-smi; then
-      ADD="$ADD --device nvidia.com/gpu=all"
+      ADD="$ADD --gpus=all --device nvidia.com/gpu=all"
     fi
   fi
 }
