@@ -29,6 +29,7 @@ usage() {
   echo "  -h, --help                     - Usage help"
   echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
   echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
+  echo "                                   also supports .gguf URLs"
   echo "  --privileged                   - Give extended privileges to container"
   echo "  -p, --publish                  - Publish a container's port to the host"
   echo "  -r, --root                     - Run as a rootful container"
@@ -120,7 +121,7 @@ gpu_setup() {
 }
 
 conman_run() {
-  $SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $1 $ADD -v"$HOME":"$HOME" $VOL $URL
+  $SUDO $CONMAN run --rm $PUBLISH $PRIV --security-opt=label=disable $1 $ADD -v"$HOME":"$HOME" -v/tmp:/tmp $VOL $URL
 }
 
 server_init() {
@@ -202,7 +203,6 @@ set_default_vals() {
   LLM="mistral"
   STDIN="false"
   ROOT="false"
-  GENERATE="false"
   CHATBOT="false"
   OPEN_WEBUI="false"
   GPU="GPU"
@@ -253,6 +253,18 @@ set_config_vals() {
   local privileged=$(read_cfg_val "privileged")
   if [ "$privileged" = "true" ]; then
     PRIV="--privileged"
+  fi
+
+  local chatbot=$(read_cfg_val "chatbot")
+  if [ "$chatbot" = "true" ]; then
+    CHATBOT="true"
+    PORT_IN="8501"
+  fi
+
+  local open_webui=$(read_cfg_val "open-webui")
+  if [ "$open_webui" = "true" ]; then
+    OPEN_WEBUI="true"
+    PORT_IN="8080"
   fi
 }
 
@@ -361,6 +373,27 @@ if [ "$1" = "serve" ]; then
   exit 0
 fi
 
+GGUF_REGEX='^(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]+.gguf$'
+if [[ $LLM =~ $GGUF_REGEX ]]; then
+  BASENAME_NO_EXT="$(basename $LLM .gguf)"
+  BASENAME_FN="$BASENAME_NO_EXT.gguf"
+
+  cd /tmp
+
+  if [ ! -e "$BASENAME_FN" ]; then
+    curl -OL --progress-bar $LLM
+  fi
+
+  cd -
+
+  FILENAME=$($SUDO $CONMAN exec $EV $T -i $CON_PS mktemp)
+  $SUDO $CONMAN exec $EV $T -i $CON_PS echo "FROM /tmp/$BASENAME_FN" > $FILENAME
+  $SUDO $CONMAN exec $EV $T -i $CON_PS cat $FILENAME
+  $SUDO $CONMAN exec $EV $T -i $CON_PS ollama create $BASENAME_NO_EXT -f $FILENAME
+  $SUDO $CONMAN exec $EV $T -i $CON_PS rm $FILENAME
+  LLM="$BASENAME_NO_EXT"
+fi
+
 T=
 if [ -t 1 ]; then
   T="-t"
@@ -368,10 +401,10 @@ fi
 
 if $CHATBOT; then
   echo -e "\n  Local URL: http://localhost:$PORT\n"
-  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" quay.io/ai-lab/chatbot:latest
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" -v/tmp:/tmp quay.io/ai-lab/chatbot:latest
 elif $OPEN_WEBUI; then
   echo -e "\n  Local URL: http://localhost:$PORT\n"
-  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e OLLAMA_BASE_URL="http://localhost:11434" -v"$HOME":"$HOME" ghcr.io/open-webui/open-webui:main
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e OLLAMA_BASE_URL="http://localhost:11434" -v"$HOME":"$HOME" -v/tmp:/tmp ghcr.io/open-webui/open-webui:main
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
