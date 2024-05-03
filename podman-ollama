@@ -375,7 +375,7 @@ elif $OPEN_WEBUI; then
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
-  shift 2
+  shift 2 || shift 1 || true
   $SUDO $CONMAN exec $EV $T $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F" $*
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CONMAN exec $EV $T -i $CON_PS ollama $*
