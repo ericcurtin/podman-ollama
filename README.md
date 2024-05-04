@@ -87,7 +87,7 @@ Configuration:
     model gemma:2b
 ```
 
-### Import from GGUF
+Import from GGUF:
 
 podman-ollama supports importing GGUF models in the Modelfile:
 
