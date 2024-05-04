@@ -87,3 +87,25 @@ Configuration:
     model gemma:2b
 ```
 
+### Import from GGUF
+
+podman-ollama supports importing GGUF models in the Modelfile:
+
+1. Create a file named `Modelfile`, with a `FROM` instruction with the local filepath to the model you want to import.
+
+   ```
+   FROM https://huggingface.co/instructlab/granite-7b-lab-GGUF/resolve/main/granite-7b-lab-Q4_K_M.gguf
+   ```
+
+2. Create the model in podman-ollama
+
+   ```
+   podman-ollama create granite-7b-lab-Q4_K_M -f Modelfile
+   ```
+
+3. Run the model
+
+   ```
+   podman-ollama run granite-7b-lab-Q4_K_M
+   ```
+
