@@ -66,7 +66,6 @@ Options:
   -h, --help                     - Usage help
   -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug
   -m, --model MODEL              - Specify non-default model, default: mistral
-                                   also supports .gguf URLs
   --privileged                   - Give extended privileges to container
   -p, --publish                  - Publish a container's port to the host
   -r, --root                     - Run as a rootful container
@@ -100,7 +99,7 @@ podman-ollama supports importing GGUF models in the Modelfile:
 2. Create the model in podman-ollama
 
    ```
-   podman-ollama create granite-7b-lab-Q4_K_M -f Modelfile
+   podman-ollama create granite-7b-lab-Q4_K_M
    ```
 
 3. Run the model
