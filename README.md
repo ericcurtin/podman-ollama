@@ -66,6 +66,7 @@ Options:
   -h, --help                     - Usage help
   -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug
   -m, --model MODEL              - Specify non-default model, default: mistral
+                                   also supports .gguf URLs
   --privileged                   - Give extended privileges to container
   -p, --publish                  - Publish a container's port to the host
   -r, --root                     - Run as a rootful container
