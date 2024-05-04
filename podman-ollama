@@ -29,7 +29,6 @@ usage() {
   echo "  -h, --help                     - Usage help"
   echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
   echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
-  echo "                                   also supports .gguf URLs"
   echo "  --privileged                   - Give extended privileges to container"
   echo "  -p, --publish                  - Publish a container's port to the host"
   echo "  -r, --root                     - Run as a rootful container"
@@ -373,27 +372,6 @@ if [ "$1" = "serve" ]; then
   exit 0
 fi
 
-GGUF_REGEX='^(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]+.gguf$'
-if [[ $LLM =~ $GGUF_REGEX ]]; then
-  BASENAME_NO_EXT="$(basename $LLM .gguf)"
-  BASENAME_FN="$BASENAME_NO_EXT.gguf"
-
-  cd /tmp
-
-  if [ ! -e "$BASENAME_FN" ]; then
-    curl -OL --progress-bar $LLM
-  fi
-
-  cd -
-
-  FILENAME=$($SUDO $CONMAN exec $EV $T -i $CON_PS mktemp)
-  $SUDO $CONMAN exec $EV $T -i $CON_PS echo "FROM /tmp/$BASENAME_FN" > $FILENAME
-  $SUDO $CONMAN exec $EV $T -i $CON_PS cat $FILENAME
-  $SUDO $CONMAN exec $EV $T -i $CON_PS ollama create $BASENAME_NO_EXT -f $FILENAME
-  $SUDO $CONMAN exec $EV $T -i $CON_PS rm $FILENAME
-  LLM="$BASENAME_NO_EXT"
-fi
-
 T=
 if [ -t 1 ]; then
   T="-t"
@@ -409,7 +387,25 @@ elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
   shift 2 || shift 1 || true
-  $SUDO $CONMAN exec $EV $T $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F" $*
+  FROM=$(sed -ne "s/^FROM\s//pg"  Modelfile)
+  GGUF_REGEX='^(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]+.gguf$'
+  if [[ $FROM =~ $GGUF_REGEX ]]; then
+    BASENAME_FN="$(basename $FROM .gguf)"
+    cd /tmp
+    if [ ! -e "$BASENAME_FN" ]; then
+      curl -OL --progress-bar $FROM
+    fi
+
+    cd - > /dev/null
+
+    FILENAME=$($SUDO $CONMAN exec $EV -i $CON_PS mktemp)
+    $SUDO $CONMAN exec $EV $T -i $CON_PS cp "$OLLAMA_F" "$FILENAME"
+    $SUDO $CONMAN exec $EV $T -i $CON_PS sed -i "s/^FROM\s.*$/FROM \/tmp\/$BASENAME_FN/g" "$FILENAME"
+    $SUDO $CONMAN exec $EV $T -i $CON_PS ollama create $OLLAMA_MOD -f "$FILENAME"
+    $SUDO $CONMAN exec $EV $T -i $CON_PS rm $FILENAME
+  else
+    $SUDO $CONMAN exec $EV $T -i $CON_PS ollama create $OLLAMA_MOD -f "$OLLAMA_F"
+  fi
 elif [ -n "$OLLAMA_CMD" ]; then
   $SUDO $CONMAN exec $EV $T -i $CON_PS ollama $*
 elif $STDIN; then
