@@ -390,7 +390,7 @@ elif [ "$OLLAMA_CMD" = "create" ]; then
   FROM=$(sed -ne "s/^FROM\s//pg"  Modelfile)
   GGUF_REGEX='^(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]+.gguf$'
   if [[ $FROM =~ $GGUF_REGEX ]]; then
-    BASENAME_FN="$(basename $FROM .gguf)"
+    BASENAME_FN="$(basename $FROM)"
     cd /tmp
     if [ ! -e "$BASENAME_FN" ]; then
       curl -OL --progress-bar $FROM
