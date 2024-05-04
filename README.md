@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/ericcurtin/podman-ollama/s/install.
 
 ## Usage
 
-If podman-ollama is passed text it is a non-interactive tool:
+### If podman-ollama is passed text it is a non-interactive tool:
 
 ```bash
 $ podman-ollama "Write a git commit message for this diff: $(git diff)"
@@ -24,7 +24,7 @@ This commit message provides a brief description of the changes made in
 the file, and is written in a format that is easy to understand and use.
 ```
 
-If podman-ollama is run without any arguments it is an interactive tool:
+### If podman-ollama is run without any arguments it is an interactive tool:
 
 ``` bash
 $ podman-ollama
@@ -34,7 +34,7 @@ Podman: Containerized application management.
 >>> Send a message (/? for help)
 ```
 
-Full usage help:
+### Full usage help:
 
 ```
 $ podman-ollama -h
@@ -86,7 +86,7 @@ Configuration:
     model gemma:2b
 ```
 
-Import from GGUF:
+### Import from GGUF:
 
 podman-ollama supports importing GGUF models in the Modelfile:
 
