@@ -85,15 +85,22 @@ if [ -z "$BINDIR" ]; then
 fi
 
 FROM="podman-ollama"
+FROM_COMPLETE="podman-ollama-complete"
+TO="$BINDIR/$FROM"
+TO_COMPLETE="/etc/bash_completion.d/$FROM_COMPLETE"
 if [ -z "$1" ]; then
   TMP="$(mktemp -d)"
   trap cleanup EXIT
-  FROM="$TMP/podman-ollama"
-  URL="raw.githubusercontent.com/ericcurtin/podman-ollama/s/podman-ollama"
+  URL="raw.githubusercontent.com/ericcurtin/podman-ollama/s/$FROM"
+  URL_COMPLETE="raw.githubusercontent.com/ericcurtin/podman-ollama/s/$FROM_COMPLETE"
+  FROM="$TMP/$FROM"
+  FROM_COMPLETE="$TMP/$FROM_COMPLETE"
   curl -fsSL -o "$FROM" "https://$URL"
+  curl -fsSL -o "$FROM_COMPLETE" "https://$URL_COMPLETE"
 fi
 
-install -D -m755 "$FROM" $BINDIR/podman-ollama
+install -D -m755 "$FROM" "$TO"
+install -D -m644 "$FROM_COMPLETE" "$TO_COMPLETE" || true
 
 if [ "$EUID" -eq 0 ] && $RPM_OSTREE; then
   echo "rpm-ostree installs are not fully automated for NVIDIA GPUs, if using NVIDIA refer to:"
