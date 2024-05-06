@@ -212,6 +212,18 @@ read_cfg_val() {
   echo "$CFG_FILE" | sed -ne "s/^$1\s//pg" 2> /dev/null
 }
 
+set_chatbot_vals() {
+  CHATBOT="true"
+  PORT_IN="8501"
+  ADD_UI="-e MODEL_ENDPOINT=http://localhost:11434 quay.io/ai-lab/chatbot:latest"
+}
+
+set_open_webui_vals() {
+  OPEN_WEBUI="true"
+  PORT_IN="8080"
+  ADD_UI="-e OLLAMA_BASE_URL=http://localhost:11434 ghcr.io/open-webui/open-webui:main"
+}
+
 set_config_vals() {
   CFG_FILE="$HOME/.podman-ollama/config"
   if [ ! -e "$CFG_FILE" ]; then
@@ -256,14 +268,12 @@ set_config_vals() {
 
   local chatbot=$(read_cfg_val "chatbot")
   if [ "$chatbot" = "true" ]; then
-    CHATBOT="true"
-    PORT_IN="8501"
+    set_chatbot_vals
   fi
 
   local open_webui=$(read_cfg_val "open-webui")
   if [ "$open_webui" = "true" ]; then
-    OPEN_WEBUI="true"
-    PORT_IN="8080"
+    set_open_webui_vals
   fi
 }
 
@@ -284,13 +294,11 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     chatbot)
-      CHATBOT="true"
-      PORT_IN="8501"
+      set_chatbot_vals
       break
       ;;
     open-webui)
-      OPEN_WEBUI="true"
-      PORT_IN="8080"
+      set_open_webui_vals
       break
       ;;
     -c|--container-manager)
@@ -377,12 +385,9 @@ if [ -t 1 ]; then
   T="-t"
 fi
 
-if $CHATBOT; then
+if $CHATBOT || $OPEN_WEBUI; then
   echo -e "\n  Local URL: http://localhost:$PORT\n"
-  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e MODEL_ENDPOINT="http://localhost:11434" -v"$HOME":"$HOME" -v/tmp:/tmp quay.io/ai-lab/chatbot:latest
-elif $OPEN_WEBUI; then
-  echo -e "\n  Local URL: http://localhost:$PORT\n"
-  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -e OLLAMA_BASE_URL="http://localhost:11434" -v"$HOME":"$HOME" -v/tmp:/tmp ghcr.io/open-webui/open-webui:main
+  $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -v"$HOME":"$HOME" -v/tmp:/tmp $ADD_UI
 elif [ "$PODMAN_CMD" = "generate" ]; then
   $SUDO $CONMAN "$@"
 elif [ "$OLLAMA_CMD" = "create" ]; then
