@@ -60,6 +60,8 @@ cleanup_impl() {
   $SUDO $CONMAN rm -f $CON_PS
   $SUDO $CONMAN rm -f $CHATBOT_PS
   $SUDO $CONMAN pod rm -f $POD_PS
+  trap - SIGTERM
+  kill -- -$$
 }
 
 cleanup() {
@@ -128,7 +130,7 @@ server_init() {
   gpu_setup
 
   if [ "$OLLAMA_CMD" != "serve" ]; then
-    trap cleanup EXIT
+    trap cleanup SIGINT SIGTERM EXIT
   fi
 
   if [ -n "$OLLAMA_HOST" ]; then
@@ -140,7 +142,8 @@ server_init() {
   fi
 
   if $CHATBOT || $OPEN_WEBUI; then
-    for PORT in {8501..9001}; do
+    PORT_IN_END=$((PORT_IN+100))
+    for (( PORT=$PORT_IN; PORT<=$PORT_IN_END; ++PORT )); do
       POD_PS="$($SUDO $CONMAN pod create -p $PORT:$PORT_IN)"
       ADD="$ADD --pod $POD_PS"
       if $SUDO $CONMAN pod start $POD_PS > /dev/null 2>&1; then
@@ -277,6 +280,20 @@ set_config_vals() {
   fi
 }
 
+open_browser_when_ready() {
+  sleep 4
+
+  for i in {1..1024}; do
+    if curl -s http://localhost:$PORT > /dev/null; then
+      break
+    fi
+
+    sleep 1
+  done
+
+  xdg-open http://localhost:$PORT || true
+}
+
 set -e -o pipefail
 shopt -s nocasematch
 
@@ -386,6 +403,7 @@ if [ -t 1 ]; then
 fi
 
 if $CHATBOT || $OPEN_WEBUI; then
+  open_browser_when_ready &
   echo -e "\n  Local URL: http://localhost:$PORT\n"
   $SUDO $CONMAN run --rm $PRIV --security-opt=label=disable --pod $POD_PS -v"$HOME":"$HOME" -v/tmp:/tmp $ADD_UI
 elif [ "$PODMAN_CMD" = "generate" ]; then
