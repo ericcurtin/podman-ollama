@@ -30,6 +30,7 @@ usage() {
   echo "  -l, --log LOGFILE              - Specify logfile to redirect to, for GPU debug"
   echo "  -m, --model MODEL              - Specify non-default model, default: mistral"
   echo "  --privileged                   - Give extended privileges to container"
+  echo "  --hsa-override-gfx-version     - Override gfx version"
   echo "  -p, --publish                  - Publish a container's port to the host"
   echo "  -r, --root                     - Run as a rootful container"
   echo "  -v, --version                  - Show version information"
@@ -156,6 +157,10 @@ server_init() {
     ADD="$ADD -v"$OLLAMA_F":"$OLLAMA_F""
   fi
 
+  if [ -n "$HSA_OVERRIDE_GFX_VERSION" ]; then
+    ADD="$ADD -e HSA_OVERRIDE_GFX_VERSION='$HSA_OVERRIDE_GFX_VERSION'"
+  fi
+
   VOL="-vollama:/root/.ollama"
   URL="docker.io/ollama/ollama:$POST"
 
@@ -269,6 +274,11 @@ set_config_vals() {
     PRIV="--privileged"
   fi
 
+  local hsa_override_gfx_version=$(read_cfg_val "hsa-override-gfx-version")
+  if [ -n "$hsa_override_gfx_version" ]; then
+    PRIV="$hsa_override_gfx_version"
+  fi
+
   local chatbot=$(read_cfg_val "chatbot")
   if [ "$chatbot" = "true" ]; then
     set_chatbot_vals
@@ -345,6 +355,10 @@ while [[ $# -gt 0 ]]; do
     --privileged)
       PRIV="--privileged"
       shift 1
+      ;;
+    --hsa-override-gfx-version)
+      HSA_OVERRIDE_GFX_VERSION="$2"
+      shift 2
       ;;
     -r|--root)
       ROOT="true"
