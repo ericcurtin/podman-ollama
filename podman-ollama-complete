@@ -30,6 +30,7 @@ __podman_ollama_autocomplete() {
         '-l' '--log'
         '-m' '--model'
         '--privileged'
+        '--hsa-override-gfx-version'
         '-p' '--publish'
         '-r' '--root'
         '-v' '--version'
