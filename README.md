@@ -1,3 +1,17 @@
+# Deprecated please see podman-llm instead:
+
+Due to the difficulty of getting patches merged into ollama to ease integration:
+
+https://github.com/ollama/ollama/pulls/ericcurtin
+
+Instead, we'd recommend trying out:
+
+https://github.com/ericcurtin/podman-llm
+
+that uses llama.cpp directly. It uses standard OCI concepts, it's daemonless and shouldn't have issues as regards contributions at any level of the stack.
+
+podman-ollama is somewhat deprecated although we will accept contributions.
+
 # podman-ollama
 
 The goal of podman-ollama is to make AI even more boring.
