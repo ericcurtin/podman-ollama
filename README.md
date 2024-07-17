@@ -1,4 +1,4 @@
-# Deprecated please see podman-llm instead:
+# Deprecated please see ramalama instead:
 
 Due to the difficulty of getting patches merged into ollama to ease integration:
 
@@ -6,7 +6,7 @@ https://github.com/ollama/ollama/pulls/ericcurtin
 
 Instead, we'd recommend trying out:
 
-https://github.com/ericcurtin/podman-llm
+https://github.com/ericcurtin/ramalama
 
 that uses llama.cpp directly. It uses standard OCI concepts, it's daemonless and shouldn't have issues as regards contributions at any level of the stack.
 
