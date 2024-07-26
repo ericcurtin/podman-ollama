@@ -1,14 +1,10 @@
 # Deprecated please see ramalama instead:
 
-Due to the difficulty of getting patches merged into ollama to ease integration:
+We are writing a new version of this tool that will support ollama registry, OCI registry and hugging face repos:
 
-https://github.com/ollama/ollama/pulls/ericcurtin
+https://github.com/containers/ramalama
 
-Instead, we'd recommend trying out:
-
-https://github.com/ericcurtin/ramalama
-
-that uses llama.cpp directly. It uses standard OCI concepts, it's daemonless and shouldn't have issues as regards contributions at any level of the stack.
+this uses llama.cpp directly.
 
 podman-ollama is somewhat deprecated although we will accept contributions.
 
