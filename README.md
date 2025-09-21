@@ -1,8 +1,8 @@
-# Deprecated please see ramalama instead:
+# Deprecated please see Docker Model Runner instead:
 
-We are writing a new version of this tool that will support ollama registry, OCI registry and hugging face repos:
+We are writing a new version of this tool that will support Docker Hub and hugging face repos:
 
-https://github.com/containers/ramalama
+https://github.com/docker/model-runner
 
 this uses llama.cpp directly.
 
